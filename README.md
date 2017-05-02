@@ -25,3 +25,6 @@ for example, the first one would be
 It will seem to be doing nothing for awhile but until it asks for a new command, it's best just to wait.
 
 If you get an error about gopath/goroot, you have likely not installed Go correctly.
+
+#### Notices
+There might be an issue with capitalization in your IDE. The `github.com/Time6628/OpenTDB-Go` may act weird so you just have to lowercase the letters into `github.com/time6628/opentdb-go` in the ```import()```
