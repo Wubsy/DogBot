@@ -27,7 +27,7 @@ It will seem to be doing nothing for awhile but until it asks for a new command,
 If you get an error about gopath/goroot, you have likely not installed Go correctly.
 
 ### Getting a bot token
-You can get your bot token from a created bot at https://discordapp.com/developers/applications/me
+You can get your bot token from a created bot at the [developer site.](https://discordapp.com/developers/applications/me)
 It is important that you get this info because the current state only runs from a discord bot API
 #### Notices
 There might be an issue with capitalization in your IDE. The `github.com/Time6628/OpenTDB-Go` may act weird so you just have to lowercase the letters into `github.com/time6628/opentdb-go` in the ```import()```
