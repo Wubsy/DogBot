@@ -57,5 +57,8 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .broom (Sends message containing [video](https://youtu.be/sSPIMgtcQnU). Same as .dontbeabroom)
  - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
  - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
- - .woop (Sends message containing [video](https://www.youtube.com/watch?v=k1Oom5r-cWY)
+ - .woop (Sends message containing [video](https://www.youtube.com/watch?v=k1Oom5r-cWY))
   
+# Using the Dev version
+[You can find the dev version here](https://github.com/Wubsy/DogBot/tree/dev)
+It's probably going to be broken most of the time. Make sure you read all of that one's readme
