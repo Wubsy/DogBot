@@ -1,3 +1,6 @@
+# This is the dev version
+I use this to test scripts. If you choose to add this one, don't tell me that it's crashing a lot and whatever. It's designed to be tested which requires me to restart it often. 
+
 # DogBot
 Horrible rip-off of CatBot that I add a ton of commands to just for the meme
 ## Inviting the bot
