@@ -345,6 +345,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(d.ID, formatError(err))
 		}
 	}  else if strings.HasPrefix(c, ".restart") && admin {
+		s.ChannelMessageSend(d.ID, "Restarting   :wave:")
 		main()
 	}
 }
