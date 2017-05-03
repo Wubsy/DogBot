@@ -53,7 +53,7 @@ func main()  {
 	BotID = u.ID
 	err = dg.Open()
 	if err != nil {
-		fmt.Println("Could not open discord session: ", err)
+		fmt.Println("Could not open Discord session: ", err)
 	}
 	fmt.Println("DogBot is now running.  Press CTRL-C to exit.")
 	select {}
@@ -88,7 +88,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	c := strings.ToLower(m.Content)
 
-	filters := []*regexp.Regexp{regexp.MustCompile("dick"), regexp.MustCompile("fuck"), regexp.MustCompile("penis"), regexp.MustCompile("vagina"), regexp.MustCompile("fag"), regexp.MustCompile("\\brape"), regexp.MustCompile("slut"), regexp.MustCompile("slut"), regexp.MustCompile("hitler"), regexp.MustCompile("\\b(jack)?ass(holes?|lick|wipe)?\\b"), regexp.MustCompile("arse(hole)?"), regexp.MustCompile("bitch"), regexp.MustCompile("whore"), regexp.MustCompile("nigg(er|a)"), regexp.MustCompile("bastard"), regexp.MustCompile("bea?stiality"), regexp.MustCompile("negro"), regexp.MustCompile("retard"), regexp.MustCompile("\\bcum\\b"), regexp.MustCompile("cunt"), regexp.MustCompile("dildo"), regexp.MustCompile("bollocks?"), regexp.MustCompile("\\bwank"), regexp.MustCompile("jizz"), regexp.MustCompile("piss"),}
+	filters := []*regexp.Regexp{regexp.MustCompile("traps aren't gay"), regexp.MustCompile("\\brape"), regexp.MustCompile("traps are not gay"), regexp.MustCompile("traps arent gay")}
 	filter := false
 
 
@@ -248,11 +248,27 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(d.ID, "http://kkmc.info/1LWYru2")
 	} else if strings.HasPrefix(c, ".vktrs") {
 		s.ChannelMessageSend(d.ID, "https://www.youtube.com/watch?v=Iwuy4hHO3YQ")
+	} else if strings.HasPrefix(c, ".gay") {
+		cc := strings.TrimPrefix(c, ".gay ")
+		arg := strings.Split(cc, " ")
+		i := rand.Intn(100)
+  		j := strconv.Itoa(i)
+			fmt.Println(j)
+			if !strings.Contains(cc, "@") {
+				s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
+				//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
+				if strings.Contains(arg[0], "157630049644707840") {
+					rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!157630049644707840> is 0% gay!")
+					fmt.Println(rm)
+				} else {
+				rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
+				fmt.Println(rm)
+					fmt.Println(arg[0])
+			} }
 	} else if strings.HasPrefix(c, ".clear") {
 		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
-			return
 		}
-		fmt.Println("clearing messages...")
+		fmt.Println("Clearing messages...")
 		args := strings.Split(strings.Replace(c, ".clear ", "", -1), " ")
 		if len(args) == 0 {
 			s.ChannelMessageSend(d.ID, "Invalid parameters")
@@ -278,8 +294,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		embed := discordgo.MessageEmbed{
 			Title: "Info",
 			Color: 10181046,
-			Description: "A rewrite of KookyKraftMC discord bot, written in Go.",
-			URL: "https://github.com/Time6628/CatBotDiscordGo",
+			Description: "A rewrite of a rewrite KookyKraftMC discord bot, written in Go.",
+			URL: "https://github.com/Time6628/CatBotDiscordGo https://github.com/Wubsy/DogBot",
 			Fields: []*discordgo.MessageEmbedField{
 				{Name: "Servers", Value: strconv.Itoa(len(s.State.Guilds)), Inline: true},
 				{Name: "Users", Value: strconv.Itoa(countUsers(s.State.Guilds)), Inline: true},
@@ -297,6 +313,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for i := range a {
 				j := rand.Intn(i + 1)
 				a[i], a[j] = a[j], a[i]
+				fmt.Println(j)
 			}
 			embedanswers := []*discordgo.MessageEmbedField{}
 			if len(a) == 2 {
@@ -441,6 +458,7 @@ func sendLater(s *discordgo.Session, cid string, msg string) {
 	s.ChannelMessageSend(cid, msg)
 }
 
+
 //structs
 type CatResponse struct {
 	URL string `json:"file"`
@@ -449,6 +467,8 @@ type CatResponse struct {
 type DogResponse struct {
 	URL string `json:"url"`
 }
+
+//func ParseInt(s string, base int, bitSize int) (i int64, err error)
 
 func getJson(url string, target interface{}) error {
 	stat, body, err := client.Get(nil, url)
