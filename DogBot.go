@@ -181,9 +181,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		b := []*discordgo.Message{rm, m.Message,}
 		removeLaterBulk(s, b)
 		fmt.Println(m.Author.Username + " muted " + user_id + " in all channels.")
-	} else if strings.HasPrefix(c, ".donationhelp") {
-		s.ChannelMessageSend(m.ChannelID,"If you don't have a rank or perk you purchased please make a forum post here: http://kkmc.info/2du3U2l")
-		removeLater(s, m.Message)
 	} else if strings.HasPrefix(c, ".cat") {
 		fmt.Println(time.Now())
 		j := CatResponse{}
@@ -295,7 +292,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Title: "Info",
 			Color: 10181046,
 			Description: "A rewrite of a rewrite KookyKraftMC discord bot, written in Go.",
-			URL: "https://github.com/Time6628/CatBotDiscordGo https://github.com/Wubsy/DogBot",
+			URL: "https://github.com/Time6628/CatBotDiscordGo",
 			Fields: []*discordgo.MessageEmbedField{
 				{Name: "Servers", Value: strconv.Itoa(len(s.State.Guilds)), Inline: true},
 				{Name: "Users", Value: strconv.Itoa(countUsers(s.State.Guilds)), Inline: true},
@@ -344,9 +341,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else if err != nil {
 			s.ChannelMessageSend(d.ID, formatError(err))
 		}
-	}  else if strings.HasPrefix(c, ".restart") && admin {
-		s.ChannelMessageSend(d.ID, "Restarting   :wave:")
-		main()
 	}
 }
 func countChannels(guilds []*discordgo.Guild) (channels int) {
