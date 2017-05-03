@@ -12,8 +12,8 @@ import (
 	"github.com/valyala/fasthttp"
 	"errors"
 	"bytes"
-	"github.com/Time6628/OpenTDB-Go"
 	"math/rand"
+	"github.com/time6628/opentdb-go"
 )
 
 func init() {
@@ -252,18 +252,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		cc := strings.TrimPrefix(c, ".gay ")
 		arg := strings.Split(cc, " ")
 		i := rand.Intn(100)
-  		j := strconv.Itoa(i)
-			fmt.Println(j)
-			if !strings.Contains(cc, "@") {
-				s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
-				//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
-				if strings.Contains(arg[0], "157630049644707840") {
-					rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!157630049644707840> is 0% gay!")
-					fmt.Println(rm)
-				} else {
+		j := strconv.Itoa(i)
+		fmt.Println(j)
+		if !strings.Contains(cc, "@") {
+			s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
+			//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
+			if strings.Contains(arg[0], "157630049644707840") {
+				rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!157630049644707840> is 0% gay!")
+				fmt.Println(rm)
+			} else {
 				rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
 				fmt.Println(rm)
-					fmt.Println(arg[0])
+				fmt.Println(arg[0])
 			} }
 	} else if strings.HasPrefix(c, ".clear") {
 		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
@@ -306,7 +306,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			s.ChannelMessageSend(d.ID, formatError(err))
 		}
-	} else if strings.HasPrefix(c, ".trivia") {
+	} else if strings.HasPrefix(c, ".trivia") && admin {
 		fmt.Println("Getting trivia")
 		if question, err := trivia.Getter.GetTrivia(1); err == nil {
 			a := append(question.Results[0].IncorrectAnswer, question.Results[0].CorrectAnswer)
@@ -344,6 +344,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else if err != nil {
 			s.ChannelMessageSend(d.ID, formatError(err))
 		}
+	}  else if strings.HasPrefix(c, ".restart") && admin {
+		main()
 	}
 }
 func countChannels(guilds []*discordgo.Guild) (channels int) {
