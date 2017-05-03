@@ -59,6 +59,6 @@ This version is different because I'm constantly changing how things work. At th
 - .info (Shows bot info. Currently working on displaying both links) (BROKEN)
 - .broom (Sends message containing [video](https://youtu.be/sSPIMgtcQnU). Same as .dontbeabroom)
 - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
-- .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ)
+- .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
 - .woop (May or may not be in this build. I forget a lot)
 
