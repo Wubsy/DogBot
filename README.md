@@ -40,3 +40,22 @@ The only argument required to run the bot is `-t` which should be followed by th
 Running it without an IDE would require you to still have Golang installed. If installed correctly, open cmd in the folder you have it downloaded to and `shift+right click>Open command window here` then type `go run DogBot.go -t` and your bot token.
 
 If you have an IDE, you can build it into an executable and only have to do `shift+right click>Open command window here` and then type `DogBot.exe -t` and the token.
+
+ ## Current commands
+ This version is different because I'm constantly changing how things work. At the time of editing this file, these are the commands.
+ - .cat < Non-zero positive num up to 15 >
+ - .doge < Non-zero positive num up to 15 >
+ - .snek < Non-zero positive num up to 15 >
+ - .gay < @user-id > (Still in development)
+ - .trivia (Only does one question | Answer to question will be a letter TODO: Admin only)
+ - .mute < @user-id > (Mutes only per text channel) (Admin Only)
+ - .muteall < @user-id > (Mutes in all text channels) (Admin Only) 
+ - .enablefilter (Enables chat filter | By default only does 'traps arent gay' and the like. TODO: Admin set filters)
+ - .removefilter (Disables chat filter)
+ - .clear < Non-zero positive num >
+ - .info (Shows bot info. Currently working on displaying both links) (BROKEN)
+ - .broom (Sends message containing [video](https://youtu.be/sSPIMgtcQnU). Same as .dontbeabroom)
+ - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
+ - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
+ - .woop (Sends message containing [video](https://www.youtube.com/watch?v=k1Oom5r-cWY)
+  
