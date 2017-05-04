@@ -41,7 +41,7 @@ func main()  {
 
 	u, err := dg.User("@me")
 	if err != nil {
-		fmt.Println("error obtaining account details,", err)
+		fmt.Println("Error obtaining account details,", err)
 	}
 
 	if err != nil {
@@ -63,7 +63,6 @@ func forever() {}
 
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-
 
 	if m.Author.ID == BotID {
 		return
@@ -91,7 +90,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	filters := []*regexp.Regexp{regexp.MustCompile("traps aren't gay"), regexp.MustCompile("\\brape"), regexp.MustCompile("traps are not gay"), regexp.MustCompile("traps arent gay")}
 	filter := false
 
-
 	admin := false
 	for i := 0; i < len(roles); i++ {
 		role, _ := s.State.Role(g.ID, roles[i])
@@ -111,7 +109,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if filter {
 		s.ChannelMessageDelete(m.ChannelID, m.ID)
-		rm, _ := s.ChannelMessageSend(m.ChannelID, "Messaged removed from <@" + m.Author.ID + ">.")
+		rm, _ := s.ChannelMessageSend(m.ChannelID, "Messaged removed from <@"+m.Author.ID+">.")
 		removeLater(s, rm)
 		return
 	} else if strings.HasPrefix(c, ".removefilter") {
@@ -153,13 +151,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
 		if !alreadyMuted(user_id, d) {
 			s.ChannelPermissionSet(d.ID, user_id, "member", 0, discordgo.PermissionSendMessages)
-			rm, _ := s.ChannelMessageSend(m.ChannelID, "Muted user " + arg[0] + "!")
+			rm, _ := s.ChannelMessageSend(m.ChannelID, "Muted user "+arg[0]+"!")
 			fmt.Println(m.Author.Username + " muted " + user_id)
-			b := []*discordgo.Message{rm, m.Message,}
+			b := []*discordgo.Message{rm, m.Message, }
 			removeLaterBulk(s, b)
 		} else {
 			rm, _ := s.ChannelMessageSend(m.ChannelID, "User already muted!")
-			b := []*discordgo.Message{rm, m.Message,}
+			b := []*discordgo.Message{rm, m.Message, }
 			removeLaterBulk(s, b)
 		}
 	} else if strings.HasPrefix(c, ".allmute") && admin {
@@ -177,18 +175,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelPermissionSet(channel.ID, user_id, "member", 0, discordgo.PermissionSendMessages)
 			}
 		}
-		rm, _ := s.ChannelMessageSend(m.ChannelID, "Muted user " + arg[0] + " in all channels!")
-		b := []*discordgo.Message{rm, m.Message,}
+		rm, _ := s.ChannelMessageSend(m.ChannelID, "Muted user "+arg[0]+" in all channels!")
+		b := []*discordgo.Message{rm, m.Message, }
 		removeLaterBulk(s, b)
 		fmt.Println(m.Author.Username + " muted " + user_id + " in all channels.")
 	} else if strings.HasPrefix(c, ".cat") {
-		fmt.Println(time.Now())
 		j := CatResponse{}
 		cc := strings.TrimPrefix(c, ".cat ")
 		if i, err := strconv.ParseInt(cc, 10, 64); err != nil {
 			getJson("http://random.cat/meow", &j)
 			s.ChannelMessageSend(d.ID, j.URL)
-			fmt.Println(time.Now())
 		} else {
 			if i > 15 || i < 0 {
 				i = 15
@@ -199,10 +195,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				e = e + j.URL + " "
 			}
 			s.ChannelMessageSend(d.ID, e)
-			fmt.Println(time.Now())
 		}
 	} else if strings.HasPrefix(c, ".cat") {
-		fmt.Println(time.Now())
 		j := CatResponse{}
 		cc := strings.TrimPrefix(c, ".cat ")
 		if i, err := strconv.ParseInt(cc, 10, 64); err != nil {
@@ -239,6 +233,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			s.ChannelMessageSend(d.ID, e)
 		}
+	} else if strings.HasPrefix(c, ".leave") {
+		s.GuildLeave(d.GuildID)
+		s.ChannelMessageSend(d.ID, "Bye :crying_cat_face: :wave: ")
+		fmt.Println("Left", d.GuildID)
+	} else if strings.HasPrefix(c,".play") && admin {
+		pp := strings.TrimPrefix(c, ".play ")
+		j := VoiceState{}
+			arg := strings.Split(pp, " ")
+			if !strings.Contains(pp, "https://www.youtube.com/") {
+				s.ChannelMessageSend(m.ChannelID, "Must be from`https://www.youtube.com/`") } else {
+				//fmt.Println(gID, arg)
+				if i, err := strconv.ParseInt(pp, 10, 64); err != nil {
+					getJson("https://discordapp.com/api/users/157630049644707840/channels", &j)
+					s.ChannelMessageSend(d.ID, j.VChannelID)
+					fmt.Println(j, j.VChannelID, i)}
+				s.ChannelMessageSend(m.ChannelID, "Downloading `" +arg[0]+ "`")
+
+			}
+		if !strings.Contains(pp, " ") {
+		s.ChannelMessageSend(d.ID, "Starting autoplaylist")}
 	} else if strings.HasPrefix(c, ".broom") || strings.HasPrefix(c, ".dontbeabroom") {
 		s.ChannelMessageSend(d.ID, "https://youtu.be/sSPIMgtcQnU")
 	} else if strings.HasPrefix(c, ".rick") {
@@ -260,7 +274,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			} else {
 				rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
 				fmt.Println(rm)
-				fmt.Println(arg[0])
+				fmt.Println(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
 			} }
 	} else if strings.HasPrefix(c, ".clear") {
 		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
@@ -272,14 +286,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			fmt.Println("Invalid clear paramters...")
 			return
 		} else if len(args) == 2 {
-			fmt.Println("clearing messages from " + d.Name + " for user " + member.User.Username)
+			fmt.Println("Clearing messages from " + d.Name + " for user " + member.User.Username)
 			if i, err := strconv.ParseInt(args[1], 10, 64); err == nil {
 				clearUserChat(int(i), d, s, args[0])
 				removeLater(s, m.Message)
 				return
 			}
 		} else if len(args) == 1 {
-			fmt.Println("clearing " + args[0] + " messages from " + d.Name + " for user " + member.User.Username)
+			fmt.Println("Clearing " + args[0] + " messages from " + d.Name + " for user " + member.User.Username)
 			if i, err := strconv.ParseInt(args[0], 10, 64); err == nil {
 				clearChannelChat(int(i), d, s)
 				removeLater(s, m.Message)
@@ -464,8 +478,13 @@ type CatResponse struct {
 type DogResponse struct {
 	URL string `json:"url"`
 }
-
-//func ParseInt(s string, base int, bitSize int) (i int64, err error)
+type VoiceState struct {
+	VChannelID string `json:"channel_id""`
+}
+type Guild struct {
+	ID string `json:"id"`
+}
+	//func ParseInt(s string, base int, bitSize int) (i int64, err error)
 
 func getJson(url string, target interface{}) error {
 	stat, body, err := client.Get(nil, url)
