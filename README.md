@@ -4,7 +4,7 @@ I use this to test scripts. If you choose to add this one, don't tell me that it
 # DogBot
 Horrible rip-off of CatBot that I add a ton of commands to just for the meme
 ## Inviting the bot
-If you're too tired to mess with stuff or don't know how, invite the dev version of my bot using this [invite link.](https://discordapp.com/oauth2/authorize?client_id=269321947278606336&scope=bot&permissions=268446782) You have to be admin on the discord server you're trying to invite it to. I don't often put it up but ¯\_(ツ)_/¯
+If you're too tired to mess with stuff or don't know how, invite the dev version of my bot using this [invite link.](https://discordapp.com/oauth2/authorize?client_id=309143062288793600&scope=bot&permissions=268446782) You have to be admin on the discord server you're trying to invite it to. I don't often put it up but ¯\_(ツ)_/¯
 
 ###### Me
 I'm pretty new to this whole github and Golang thing so don't use big words :stuck_out_tongue:
@@ -61,4 +61,3 @@ This version is different because I'm constantly changing how things work. At th
 - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
 - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
 - .woop (May or may not be in this build. I forget a lot)
-
