@@ -13,7 +13,11 @@ import (
 	"errors"
 	"bytes"
 	"math/rand"
-	"github.com/time6628/opentdb-go"
+	"github.com/Time6628/OpenTDB-Go"
+	"net/http"
+	"io/ioutil"
+	"net/url"
+	//"github.com/mikicaivosevic/golang-url-shortener"
 )
 
 func init() {
@@ -29,9 +33,11 @@ var (
 	nofilter []string
 )
 
+var Lreplacer = strings.NewReplacer(" ", "+")
+var Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 func main()  {
 	go forever()
-	fmt.Println("Starting Dogbot 0.1")
+	fmt.Println("Starting Dogbot 0.5")
 
 	if token == "" {
 		fmt.Println("No token provided. Please run: dogbot -t <bot token>")
@@ -41,7 +47,7 @@ func main()  {
 
 	u, err := dg.User("@me")
 	if err != nil {
-		fmt.Println("Error obtaining account details,", err)
+		fmt.Println("error obtaining account details,", err)
 	}
 
 	if err != nil {
@@ -137,7 +143,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			removeLaterBulk(s, []*discordgo.Message{e, m.Message})
 		}
 	} else if strings.HasPrefix(c, ".dogbot") {
-		s.ChannelMessageSend(m.ChannelID, "bork bork beep boop! I am dogbot 0.1!")
+		s.ChannelMessageSend(m.ChannelID, "bork bork beep boop! I am DogBot 0.5!")
 		return
 	} else if strings.HasPrefix(c, ".mute") && admin {
 		cc := strings.TrimPrefix(c, ".mute ")
@@ -202,7 +208,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if i, err := strconv.ParseInt(cc, 10, 64); err != nil {
 			getJson("http://random.cat/meow", &j)
 			s.ChannelMessageSend(d.ID, j.URL)
-			fmt.Println(time.Now())
+			//fmt.Println(time.Now())
 		} else {
 			if i > 15 || i < 0 {
 				i = 15
@@ -213,7 +219,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				e = e + j.URL + " "
 			}
 			s.ChannelMessageSend(d.ID, e)
-			fmt.Println(time.Now())
+			//fmt.Println(time.Now())
 		}
 	} else if strings.HasPrefix(c, ".doge") {
 		j := DogResponse{}
@@ -240,42 +246,77 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(c,".play") && admin {
 		pp := strings.TrimPrefix(c, ".play ")
 		j := VoiceState{}
+
 			arg := strings.Split(pp, " ")
 			if !strings.Contains(pp, "https://www.youtube.com/") {
 				s.ChannelMessageSend(m.ChannelID, "Must be from`https://www.youtube.com/`") } else {
 				//fmt.Println(gID, arg)
 				if i, err := strconv.ParseInt(pp, 10, 64); err != nil {
 					getJson("https://discordapp.com/api/users/157630049644707840/channels", &j)
-					s.ChannelMessageSend(d.ID, j.VChannelID)
-					fmt.Println(j, j.VChannelID, i)}
+	//				s.ChannelMessageSend(d.ID, j.VChannelID)
+					fmt.Println(j, j.pcmChannel , i)}
 				s.ChannelMessageSend(m.ChannelID, "Downloading `" +arg[0]+ "`")
 
 			}
 		if !strings.Contains(pp, " ") {
 		s.ChannelMessageSend(d.ID, "Starting autoplaylist")}
+	} else if strings.HasPrefix(c,".join ") && admin {
+		cc := strings.TrimPrefix(c, ".join ")
+		arg := strings.Split(cc, " ")
+//		r := VoiceSpeakingUpdate{}
+			vc, err := s.ChannelVoiceJoin(d.GuildID, arg[0], false, false)
+			vc.Speaking(true)
+
+
+				if err != nil {
+					fmt.Println(err)
+				}
 	} else if strings.HasPrefix(c, ".broom") || strings.HasPrefix(c, ".dontbeabroom") {
 		s.ChannelMessageSend(d.ID, "https://youtu.be/sSPIMgtcQnU")
 	} else if strings.HasPrefix(c, ".rick") {
 		s.ChannelMessageSend(d.ID, "http://kkmc.info/1LWYru2")
 	} else if strings.HasPrefix(c, ".vktrs") {
 		s.ChannelMessageSend(d.ID, "https://www.youtube.com/watch?v=Iwuy4hHO3YQ")
-	} else if strings.HasPrefix(c, ".gay") {
-		cc := strings.TrimPrefix(c, ".gay ")
-		arg := strings.Split(cc, " ")
-		i := rand.Intn(100)
-		j := strconv.Itoa(i)
-		fmt.Println(j)
-		if !strings.Contains(cc, "@") {
+	} else if strings.HasPrefix(c, ".lmgtfy") {
+		cc := strings.TrimPrefix(c, ".lmgtfy ")
+		arg := strings.SplitAfterN(cc, " ", 1)
+			if len(arg) == 0 {
+				s.ChannelMessageSend(d.ID, "Query is empty.")
+			} else if arg[0] == ".lmgtfy" {
+				s.ChannelMessageSend(d.ID, "Query is empty.")
+			} else {
+				str := Lreplacer.Replace(arg[0])
+				oldUrl := "http://lmgtfy.com/?q="+str+""
+				url := UrlShortener{}
+				url.short(oldUrl, TINY_URL)
+				//url.short("http://www.example.com", IS_GD)
+				fmt.Println(url.ShortUrl)
+				fmt.Println(url.OriginalUrl)
+				em, _ := s.ChannelMessageSend(m.ChannelID, "<"+url.ShortUrl+">")
+				fmt.Println(em)
+			}
+		removeNow(s, m.Message)
+	}else if strings.HasPrefix(c, ".gay") {
+			cc := strings.TrimPrefix(c, ".gay ")
+			arg := strings.Split(cc, " ")
+			i := rand.Intn(100)
+			j := strconv.Itoa(i)
+				//fmt.Println(j)
+		if !strings.Contains(cc, "<@") {
 			s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
 			//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
 			if strings.Contains(arg[0], "157630049644707840") {
 				rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!157630049644707840> is 0% gay!")
 				fmt.Println(rm)
 			} else {
+			if strings.Contains(arg[0], "155481695167053824") {
+				rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is 150% gay!")
+				fmt.Println(rm)
+			} else {
 				rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
 				fmt.Println(rm)
 				fmt.Println(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
-			} }
+			} } }
 	} else if strings.HasPrefix(c, ".clear") {
 		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
 		}
@@ -305,7 +346,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		embed := discordgo.MessageEmbed{
 			Title: "Info",
 			Color: 10181046,
-			Description: "A rewrite of a rewrite KookyKraftMC discord bot, written in Go.",
+			Description: "A rewrite of a rewrite of KookyKraftMC's discord bot, written in Go.",
 			URL: "https://github.com/Time6628/CatBotDiscordGo",
 			Fields: []*discordgo.MessageEmbedField{
 				{Name: "Servers", Value: strconv.Itoa(len(s.State.Guilds)), Inline: true},
@@ -324,8 +365,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for i := range a {
 				j := rand.Intn(i + 1)
 				a[i], a[j] = a[j], a[i]
-				fmt.Println(j)
 			}
+			question.Results[0].Question = Qreplacer.Replace(question.Results[0].Question)
 			embedanswers := []*discordgo.MessageEmbedField{}
 			if len(a) == 2 {
 				embedanswers = []*discordgo.MessageEmbedField{
@@ -333,6 +374,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					{Name: "B", Value: a[1], Inline: true},
 				}
 			} else if len(a) == 4 {
+					a[0] = Qreplacer.Replace(a[0])
+					a[1] = Qreplacer.Replace(a[1])
+					a[2] = Qreplacer.Replace(a[2])
+					a[3] = Qreplacer.Replace(a[3])
+
 				embedanswers = []*discordgo.MessageEmbedField{
 					{Name: "A", Value: a[0], Inline: true},
 					{Name: "B", Value: a[1], Inline: true},
@@ -351,6 +397,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				s.ChannelMessageSend(d.ID, formatError(err))
 			}
+			fmt.Println(question.Results[0].CorrectAnswer)
+			if question.Results[0].CorrectAnswer == "0" {fmt.Println("A")}
+			if question.Results[0].CorrectAnswer == "1" {fmt.Println("B")}
+			if question.Results[0].CorrectAnswer == "2" {fmt.Println("C")}
+			if question.Results[0].CorrectAnswer == "3" {fmt.Println("D")}
 			sendLater(s, d.ID, "The correct answer was: " + question.Results[0].CorrectAnswer)
 		} else if err != nil {
 			s.ChannelMessageSend(d.ID, formatError(err))
@@ -463,6 +514,12 @@ func removeLater(s *discordgo.Session, m *discordgo.Message) {
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 }
 
+func removeNow(s *discordgo.Session, m *discordgo.Message) {
+	timer := time.NewTimer(time.Second * 1)
+	<- timer.C
+	s.ChannelMessageDelete(m.ChannelID, m.ID)
+}
+
 func sendLater(s *discordgo.Session, cid string, msg string) {
 	timer := time.NewTimer(time.Minute * 1)
 	<- timer.C
@@ -479,11 +536,25 @@ type DogResponse struct {
 	URL string `json:"url"`
 }
 type VoiceState struct {
-	VChannelID string `json:"channel_id""`
+	discord      *discordgo.Session
+	pcmChannel   chan []int16
+	serverID     string
+	skip         bool
+	stop         bool
+	trackPlaying bool
 }
 type Guild struct {
 	ID string `json:"id"`
 }
+
+type VoiceSpeakingUpdate struct {
+	UserID   string `json:"user_id"`
+	SSRC     int    `json:"ssrc"`
+	Speaking bool   `json:"speaking"`
+}
+
+
+
 	//func ParseInt(s string, base int, bitSize int) (i int64, err error)
 
 func getJson(url string, target interface{}) error {
@@ -501,4 +572,56 @@ func getJson(url string, target interface{}) error {
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(target)
 	*/
+}
+
+//Until I can get the import to work on this, I'm plopping it down here
+//This is from https://github.com/mikicaivosevic/golang-url-shortener but it's set up as an application
+
+
+const (
+	TINY_URL = 1
+	IS_GD    = 2
+)
+
+type UrlShortener struct {
+	ShortUrl    string
+	OriginalUrl string
+}
+
+func getResponseData(urlOrig string) string {
+	response, err := http.Get(urlOrig)
+	if err != nil {
+		fmt.Print(err)
+	}
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	return string(contents)
+}
+
+func tinyUrlShortener(urlOrig string) (string, string) {
+	escapedUrl := url.QueryEscape(urlOrig)
+	tinyUrl := fmt.Sprintf("http://tinyurl.com/api-create.php?url=%s", escapedUrl)
+	return getResponseData(tinyUrl), urlOrig
+}
+
+func isGdShortener(urlOrig string) (string, string) {
+	escapedUrl := url.QueryEscape(urlOrig)
+	isGdUrl := fmt.Sprintf("http://is.gd/create.php?url=%s&format=simple", escapedUrl)
+	return getResponseData(isGdUrl), urlOrig
+}
+
+func (u *UrlShortener) short(urlOrig string, shortener int) *UrlShortener {
+	switch shortener {
+	case TINY_URL:
+		shortUrl, originalUrl := tinyUrlShortener(urlOrig)
+		u.ShortUrl = shortUrl
+		u.OriginalUrl = originalUrl
+		return u
+	case IS_GD:
+		shortUrl, originalUrl := isGdShortener(urlOrig)
+		u.ShortUrl = shortUrl
+		u.OriginalUrl = originalUrl
+		return u
+	}
+	return u
 }
