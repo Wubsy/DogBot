@@ -61,4 +61,4 @@ This version is different because I'm constantly changing how things work. At th
 - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
 - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
 - .woop (Removed from current build)
-- .lmgtfy (Can accept arguments as strings with pluses as spaces or actual spaces as spaces)
+- .lmgtfy < Strings with pluses as spaces or actual spaces as spaces > (Removed embed and now shortens link)
