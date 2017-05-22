@@ -47,7 +47,7 @@ func main()  {
 
 	u, err := dg.User("@me")
 	if err != nil {
-		fmt.Println("error obtaining account details,", err)
+		fmt.Println("Error obtaining account details,", err)
 	}
 
 	if err != nil {
