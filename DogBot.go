@@ -14,6 +14,10 @@ import (
 	"bytes"
 	"math/rand"
 	"github.com/Time6628/OpenTDB-Go"
+	"net/http"
+	"io/ioutil"
+	"net/url"
+	//"github.com/mikicaivosevic/golang-url-shortener"
 )
 
 func init() {
@@ -30,6 +34,7 @@ var (
 )
 
 var Lreplacer = strings.NewReplacer(" ", "+")
+var Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 func main()  {
 	go forever()
 	fmt.Println("Starting Dogbot 0.5")
@@ -203,7 +208,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if i, err := strconv.ParseInt(cc, 10, 64); err != nil {
 			getJson("http://random.cat/meow", &j)
 			s.ChannelMessageSend(d.ID, j.URL)
-			fmt.Println(time.Now())
+			//fmt.Println(time.Now())
 		} else {
 			if i > 15 || i < 0 {
 				i = 15
@@ -214,7 +219,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				e = e + j.URL + " "
 			}
 			s.ChannelMessageSend(d.ID, e)
-			fmt.Println(time.Now())
+			//fmt.Println(time.Now())
 		}
 	} else if strings.HasPrefix(c, ".doge") {
 		j := DogResponse{}
@@ -275,15 +280,19 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(c, ".lmgtfy") {
 		cc := strings.TrimPrefix(c, ".lmgtfy ")
 		arg := strings.SplitAfterN(cc, " ", 1)
-		x := 0
-		fmt.Println(arg[x])
 			if len(arg) == 0 {
 				s.ChannelMessageSend(d.ID, "Query is empty.")
 			} else if arg[0] == ".lmgtfy" {
 				s.ChannelMessageSend(d.ID, "Query is empty.")
 			} else {
 				str := Lreplacer.Replace(arg[0])
-				em, _ := s.ChannelMessageSend(m.ChannelID, "http://lmgtfy.com/?q="+str+"")
+				oldUrl := "http://lmgtfy.com/?q="+str+""
+				url := UrlShortener{}
+				url.short(oldUrl, TINY_URL)
+				//url.short("http://www.example.com", IS_GD)
+				fmt.Println(url.ShortUrl)
+				fmt.Println(url.OriginalUrl)
+				em, _ := s.ChannelMessageSend(m.ChannelID, "<"+url.ShortUrl+">")
 				fmt.Println(em)
 			}
 		removeNow(s, m.Message)
@@ -292,7 +301,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			arg := strings.Split(cc, " ")
 			i := rand.Intn(100)
 			j := strconv.Itoa(i)
-				fmt.Println(j)
+				//fmt.Println(j)
 		if !strings.Contains(cc, "<@") {
 			s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
 			//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
@@ -357,6 +366,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				j := rand.Intn(i + 1)
 				a[i], a[j] = a[j], a[i]
 			}
+			question.Results[0].Question = Qreplacer.Replace(question.Results[0].Question)
 			embedanswers := []*discordgo.MessageEmbedField{}
 			if len(a) == 2 {
 				embedanswers = []*discordgo.MessageEmbedField{
@@ -364,6 +374,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					{Name: "B", Value: a[1], Inline: true},
 				}
 			} else if len(a) == 4 {
+					a[0] = Qreplacer.Replace(a[0])
+					a[1] = Qreplacer.Replace(a[1])
+					a[2] = Qreplacer.Replace(a[2])
+					a[3] = Qreplacer.Replace(a[3])
+
 				embedanswers = []*discordgo.MessageEmbedField{
 					{Name: "A", Value: a[0], Inline: true},
 					{Name: "B", Value: a[1], Inline: true},
@@ -538,6 +553,8 @@ type VoiceSpeakingUpdate struct {
 	Speaking bool   `json:"speaking"`
 }
 
+
+
 	//func ParseInt(s string, base int, bitSize int) (i int64, err error)
 
 func getJson(url string, target interface{}) error {
@@ -555,4 +572,56 @@ func getJson(url string, target interface{}) error {
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(target)
 	*/
+}
+
+//Until I can get the import to work on this, I'm plopping it down here
+//This is from https://github.com/mikicaivosevic/golang-url-shortener but it's set up as an application
+
+
+const (
+	TINY_URL = 1
+	IS_GD    = 2
+)
+
+type UrlShortener struct {
+	ShortUrl    string
+	OriginalUrl string
+}
+
+func getResponseData(urlOrig string) string {
+	response, err := http.Get(urlOrig)
+	if err != nil {
+		fmt.Print(err)
+	}
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	return string(contents)
+}
+
+func tinyUrlShortener(urlOrig string) (string, string) {
+	escapedUrl := url.QueryEscape(urlOrig)
+	tinyUrl := fmt.Sprintf("http://tinyurl.com/api-create.php?url=%s", escapedUrl)
+	return getResponseData(tinyUrl), urlOrig
+}
+
+func isGdShortener(urlOrig string) (string, string) {
+	escapedUrl := url.QueryEscape(urlOrig)
+	isGdUrl := fmt.Sprintf("http://is.gd/create.php?url=%s&format=simple", escapedUrl)
+	return getResponseData(isGdUrl), urlOrig
+}
+
+func (u *UrlShortener) short(urlOrig string, shortener int) *UrlShortener {
+	switch shortener {
+	case TINY_URL:
+		shortUrl, originalUrl := tinyUrlShortener(urlOrig)
+		u.ShortUrl = shortUrl
+		u.OriginalUrl = originalUrl
+		return u
+	case IS_GD:
+		shortUrl, originalUrl := isGdShortener(urlOrig)
+		u.ShortUrl = shortUrl
+		u.OriginalUrl = originalUrl
+		return u
+	}
+	return u
 }
