@@ -46,7 +46,7 @@ var Lreplacer = strings.NewReplacer(" ", "+")
 var Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 func main()  {
 	go forever()
-	fmt.Println("Starting Dogbot 0.5.5")
+	fmt.Println("Starting Dogbot 0.5.6")
 
 	if token == "" {
 		fmt.Println("No token provided. Please run: dogbot -t <bot token>")
@@ -152,7 +152,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			removeLaterBulk(s, []*discordgo.Message{e, m.Message})
 		}
 	} else if strings.HasPrefix(c, ".dogbot") {
-		s.ChannelMessageSend(m.ChannelID, "bork bork beep boop! I am DogBot 0.5.5!")
+		s.ChannelMessageSend(m.ChannelID, "bork bork beep boop! I am DogBot 0.5.6!")
 		return
 	} else if strings.HasPrefix(c, ".mute") && admin {
 		cc := strings.TrimPrefix(c, ".mute ")
@@ -312,7 +312,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(c, ".setgame") &&  m.Author.ID == "157630049644707840" {
 		cc := strings.TrimPrefix(c, ".setgame ")
 		arg := strings.SplitAfterN(cc, " ", 1)
-		s.UpdateStatus(0, "Streaming "+arg[0])
+		s.UpdateStatus(0, arg[0])
 
 		} else if strings.HasPrefix(c, ".lmgtfy") {
 			cc := strings.TrimPrefix(c, ".lmgtfy ")
@@ -571,49 +571,11 @@ type CatResponse struct {
 type DogResponse struct {
 	URL string `json:"url"`
 }
-type VoiceState struct {
-	discord      *discordgo.Session
-	pcmChannel   chan []int16
-	serverID     string
-	skip         bool
-	stop         bool
-	trackPlaying bool
-}
+
+
 type Guild struct {
 	ID string `json:"id"`
 }
-
-type VoiceSpeakingUpdate struct {
-	UserID   string `json:"user_id"`
-	SSRC     int    `json:"ssrc"`
-	Speaking bool   `json:"speaking"`
-}
-
-type Settings struct {
-	RenderEmbeds           bool               `json:"render_embeds"`
-	InlineEmbedMedia       bool               `json:"inline_embed_media"`
-	InlineAttachmentMedia  bool               `json:"inline_attachment_media"`
-	EnableTtsCommand       bool               `json:"enable_tts_command"`
-	MessageDisplayCompact  bool               `json:"message_display_compact"`
-	ShowCurrentGame        bool               `json:"show_current_game"`
-	ConvertEmoticons       bool               `json:"convert_emoticons"`
-	Locale                 string             `json:"locale"`
-	Theme                  string             `json:"theme"`
-	GuildPositions         []string           `json:"guild_positions"`
-	RestrictedGuilds       []string           `json:"restricted_guilds"`
-	FriendSourceFlags      *FriendSourceFlags `json:"friend_source_flags"`
-	Status                 string             `json:"status"`
-	DetectPlatformAccounts bool               `json:"detect_platform_accounts"`
-	DeveloperMode          bool               `json:"developer_mode"`
-}
-
-type FriendSourceFlags struct {
-	All           bool `json:"all"`
-	MutualGuilds  bool `json:"mutual_guilds"`
-	MutualFriends bool `json:"mutual_friends"`
-}
-
-
 
 func getJson(url string, target interface{}) error {
 	stat, body, err := client.Get(nil, url)
@@ -684,23 +646,46 @@ func youtubeDl(url string) (io.Reader, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
-	if _, err := os.Stat("download\\"+ fileName +".mp3"); os.IsNotExist(err) {
-		file, err := os.Create("download\\" + fileName + ".mp3")
 
-		if err != nil {
-			fmt.Println(err)
+	fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
+
+	if _, err := os.Stat("download\\" + fileName + ".mp3"); os.IsNotExist(err) {
+		if _, err := os.Stat("download\\" + fileName + ".mp3"); err == nil {
+			file, err := os.Open("download\\" + fileName + ".mp3")
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer file.Close()
+
+			stat, err := file.Stat()
+
+			var strBytes int64
+			strBytes = stat.Size()
+			if strBytes == 0 {
+				fmt.Println("File is empty. Redownloading")
+				file, err := os.Create("download\\" + fileName + ".mp3")
+				err = vid.Download(vid.Formats.Best(ytdl.FormatAudioBitrateKey)[0], file)
+
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-		err = vid.Download(vid.Formats.Best(ytdl.FormatAudioBitrateKey)[0], file)
-		if err != nil {
-			fmt.Println(err)
+		file, err := os.Create("download\\" + fileName + ".mp3")
+				err = vid.Download(vid.Formats.Best(ytdl.FormatAudioBitrateKey)[0], file)
+				if err != nil {
+					fmt.Println(err)
+
+			} else {
+				fmt.Println("File already exists")
+			}
+			return nil, nil
 		}
-	} else {
-		fmt.Println("File already exists, start playing.")
-	}
 	return nil, nil
 }
-
 func getCurrentVoiceChannel(user *discordgo.User, session *discordgo.Session, guild *discordgo.Guild) *discordgo.Channel {
 	for _, vs := range guild.VoiceStates {
 		if vs.UserID == user.ID {
