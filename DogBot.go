@@ -40,6 +40,8 @@ var (
 	//discord *discordgo.Session
 	dgv *discordgo.VoiceConnection
 	Folder    = "download/"
+//	isSpeaking = false
+
 )
 
 var Lreplacer = strings.NewReplacer(" ", "+")
@@ -250,7 +252,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	} else if strings.HasPrefix(c, "who's a good boy") {
 		s.ChannelMessageSend(d.ID, "ME ME ME <@"+m.Author.ID+">")
-	} else if strings.HasPrefix(c, ".leave") {
+	}  else if strings.HasPrefix(c, ".leave") {
 		s.ChannelMessageSend(d.ID, "Bye :crying_cat_face: :wave: ")
 		s.GuildLeave(d.GuildID)
 		fmt.Println("Left", d.GuildID)
@@ -284,7 +286,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			dgv, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
 
 			s.UpdateStatus(0, "Streaming "+vid.Title)
+			fmt.Println(dgvoice.IsSpeaking)
 			dgvoice.PlayAudioFile(dgv, file)
+			fmt.Println(dgvoice.IsSpeaking)
 			return
 
 			if err != nil {
@@ -294,6 +298,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		if !strings.Contains(pp, " ") {
 			/*s.ChannelMessageSend(d.ID, "Starting autoplaylist")*/ }
+	} else if strings.HasPrefix(c, ".skip") && admin {
+		fmt.Println(dgvoice.IsSpeaking)
+		if dgvoice.IsSpeaking  {
+			s.ChannelMessageSend(c, "Skipping...")
+			dgvoice.KillPlayer()
+		}
+		if dgvoice.IsSpeaking == false {
+			s.ChannelMessageSend(c, "Not currently playing")
+		}
 	} else if strings.HasPrefix(c, ".join ") && admin {
 		cc := strings.TrimPrefix(c, ".join ")
 		arg := strings.Split(cc, " ")
