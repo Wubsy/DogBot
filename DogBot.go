@@ -261,8 +261,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		} else {
 			arg := strings.Split(pp, " ")
 			url := xurls.Strict.FindString(m.Content)
-			s.ChannelMessageSend(m.ChannelID, "Downloading `"+arg[0]+"`")
-			youtubeDl(url)
+			//s.ChannelMessageSend(m.ChannelID, "Downloading `"+arg[0]+"`")
+			youtubeDl(url, d, s)
 
 			if err != nil {
 				fmt.Println(err)
@@ -639,12 +639,12 @@ func (u *UrlShortener) short(urlOrig string, shortener int) *UrlShortener {
 	return u
 }
 
-func youtubeDl(url string) (io.Reader, error) {
+func youtubeDl(url string, channel *discordgo.Channel, session *discordgo.Session) (io.Reader, error) {
 	fmt.Println("Found url " + url)
 
 	vid, err := ytdl.GetVideoInfo(url)
 	if err != nil {
-		fmt.Println(err)
+		session.ChannelMessageSend(channel.ID, err.Error())
 	}
 
 	fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
@@ -662,12 +662,12 @@ func youtubeDl(url string) (io.Reader, error) {
 			var strBytes int64
 			strBytes = stat.Size()
 			if strBytes == 0 {
-				fmt.Println("File is empty. Redownloading")
+				session.ChannelMessageSend(channel.ID, "File is empty. Redownloading")
 				file, err := os.Create("download\\" + fileName + ".mp3")
 				err = vid.Download(vid.Formats.Best(ytdl.FormatAudioBitrateKey)[0], file)
 
 				if err != nil {
-					fmt.Println(err)
+					session.ChannelMessageSend(channel.ID, err.Error())
 				}
 			}
 			if err != nil {
@@ -676,10 +676,9 @@ func youtubeDl(url string) (io.Reader, error) {
 		}
 		file, err := os.Create("download\\" + fileName + ".mp3")
 				err = vid.Download(vid.Formats.Best(ytdl.FormatAudioBitrateKey)[0], file)
-				if err != nil {
-					fmt.Println(err)
-
-			} else {
+		if err != nil {
+			session.ChannelMessageSend(channel.ID, err.Error())
+		} else {
 				fmt.Println("File already exists")
 			}
 			return nil, nil
