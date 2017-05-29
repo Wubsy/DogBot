@@ -10,10 +10,14 @@ I'm pretty new to this whole github and Golang thing so don't use big words :stu
 Requires:
 ```
 github.com/Time6628/OpenTDB-Go
+github.com/rylio/ytdl
 github.com/valyala/fasthttp
 github.com/bwmarrin/discordgo
+github.com/mvdan/xurls
+github.com/Wubsy/dgvoice
 ```
-
+It now also requires you to have ffmpeg in the directory of the program.
+# The audio plays at 100% as I have yet to find away to change this. You MUST turn it down client-side or say goodbye to your ears
 # Setup
 ## Downloading Libraries
 Implying you already have Golang installed correctly you should be able to do the following command in command prompt
@@ -58,7 +62,18 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
  - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
  - .woop (Sends message containing [video](https://www.youtube.com/watch?v=k1Oom5r-cWY))
+ 
+ --Music--
+ 
+ - .play < YouTube link starting with https://www.youtube.com/ > (Downloads and plays a video in format https://youtube.com/watch?v-) 
+ - .skip (Skips currently playing video)
   
 # Using the Dev version
 [You can find the dev version here](https://github.com/Wubsy/DogBot/tree/dev)
 It's probably going to be broken most of the time. Make sure you read all of that one's readme
+
+## Launching from executable
+As of version 0.5.7, I have started building my go files into executables. Because the executables are already built, you will have very little freedom until future updates. 
+#
+You can use a .bat file and put something like `BotApp-0.0.1.exe -t` followed by your bot token in it and run it in the same directory as the executable. 
+
