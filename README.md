@@ -79,4 +79,4 @@ As of version 0.5.7, I have started building my go files into executables. Becau
 #
 You can use a .bat file and put something like `BotApp-0.0.1.exe -t` followed by your bot token in it and run it in the same directory as the executable. 
 
-[Download Generic Executable](http://downloads.willbusby.us/BotApp-0.0.1.exe)
+[Download Generic Executable](http://willbusby.us/downloads/)
