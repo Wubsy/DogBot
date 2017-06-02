@@ -19,7 +19,7 @@ github.com/mvdan/xurls
 github.com/Wubsy/dgvoice
 ```
 It now also requires you to have ffmpeg in the directory of the program.
-# The audio plays at 100% as I have yet to find away to change this. You MUST turn it down client-side or say goodbye to your ears
+# The audio plays at 100% as I have yet to find a way to change this. You MUST turn it down client-side or say goodbye to your ears
 # Setup
 ## Downloading Libraries
 Implying you already have Golang installed correctly you should be able to do the following command in command prompt
