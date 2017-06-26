@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"io"
 	"os"
+	"bufio"
 	//"github.com/bwmarrin/discordgo" //Disabled because my fork has more functionality
 	"github.com/rylio/ytdl"
 	"github.com/valyala/fasthttp"
@@ -36,16 +37,17 @@ var (
 	client = fasthttp.Client{ReadTimeout: time.Second * 10, WriteTimeout: time.Second * 10}
 	trivia = OpenTDB_Go.New(client)
 	nofilter []string
-	//The lines below may say they are unused but they're required to play a video
-	GuildID   = flag.String("g", "", "Guild ID")
-	discord *discordgo.Session
+	//The lines below may say they are unused but they're required to play a video // may disregard this. I think this is patched but not sure
+	//GuildID   = flag.String("g", "", "Guild ID")
+	//discord *discordgo.Session
 	dgv *discordgo.VoiceConnection
-	Folder    = "download/"
-	prefixChar = "d!" // Don't use  # and @ because it might mess with
+	Folder = "download/"
+	prefixChar = "d!" // Don't use  # and @ because it might mess with channels or users
 	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.5.7"
+	version = "0.6.0"
 	isVConnected = false
+	APlaylist = "autoplaylist.txt"
 )
 
 func main()  {
@@ -54,12 +56,12 @@ func main()  {
 	url := "http://bots.willbusby.us/DogBotVer"
 	resp, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	defer resp.Body.Close()
 	html, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	fmt.Printf("%s\n", html)
 
@@ -84,11 +86,13 @@ func main()  {
 
 	BotID = u.ID
 	err = dg.Open()
+
 	if err != nil {
 		fmt.Println("Could not open Discord session: ", err)
 	}
 	fmt.Println("DogBot is now running.  Press CTRL-C to exit.")
 	select {}
+
 }
 
 func forever() {}
@@ -119,7 +123,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	c := strings.ToLower(m.Content)
 
-	filters := []*regexp.Regexp{regexp.MustCompile("traps aren't gay"), regexp.MustCompile("\\brape"), regexp.MustCompile("traps are not gay"), regexp.MustCompile("traps arent gay")}
+	filters := []*regexp.Regexp{regexp.MustCompile("traps aren't gay"), regexp.MustCompile("traps are not gay"), regexp.MustCompile("traps arent gay")}
 	filter := false
 
 	admin := false
@@ -179,7 +183,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		arg := strings.Split(cc, " ")
 		fmt.Println(arg[0])
-		fmt.Println(cc)
+		//fmt.Println(cc)
 		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
 		if !alreadyMuted(user_id, d) {
 			s.ChannelPermissionSet(d.ID, user_id, "member", 0, discordgo.PermissionSendMessages)
@@ -260,7 +264,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			e := ""
 			for b := int64(0); b < i; b++ {
 				getJson("https://random.dog/woof.json", &j)
-				e = e + j.URL + " "
+				if strings.Contains(j.URL, ".mp4") || strings.Contains(e, j.URL) {
+					if strings.Contains(e, j.URL) {
+						fmt.Println("Duplicate avoided")
+					}
+					b--
+				} else {
+					e = e + j.URL + " "
+				}
 			}
 			s.ChannelMessageSend(d.ID, e)
 
@@ -271,6 +282,53 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(d.ID, "Bye :crying_cat_face: :wave: ")
 		s.GuildLeave(d.GuildID)
 		fmt.Println("Left", d.GuildID)
+	} else if strings.HasPrefix(c, prefixChar+"fplay") && admin {
+		pp := strings.TrimPrefix(m.Content, prefixChar+"fplay ")
+		arg := strings.SplitAfterN(pp, " ", 1)
+		guild, _ := s.Guild(d.GuildID)
+
+		channel := getCurrentVoiceChannel(m.Author, s, guild)
+		if channel != nil {
+			dgv, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, "Must be in voice channel to play music")
+			} else {
+				if !dgvoice.IsSpeaking {
+					url := "https://www.youtube.com/watch?v=" + arg[0]
+					vid, err := ytdl.GetVideoInfo(url)
+						if err != nil {
+							fmt.Println(err)
+						}
+					if vid.Title == "" {
+						fmt.Println("Streaming "+arg[0]+".mp3")
+						s.UpdateStatus(0, "Streaming "+arg[0]+".mp3")
+					} else {
+						s.UpdateStatus(0, "Streaming "+vid.Title)
+					}
+
+
+					dgvoice.PlayAudioFile(dgv, "download\\"+arg[0]+".mp3", s)
+				} else {
+					fmt.Println("Error playing file")
+				}
+			}
+
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "File does not exist or "+arg[0]+".mp3 is not valid")
+		}
+	} else if strings.HasPrefix(c, prefixChar+"csay") && m.Author.ID == "157630049644707840" {
+		removeNow(s, m.Message)
+		cc := strings.TrimPrefix(m.Content, prefixChar+"csay ")
+		chann := strings.SplitAfter(cc, " ")
+		trimChann := strings.TrimPrefix(m.Content, prefixChar+"csay "+chann[0])
+
+
+		_, err := s.ChannelMessageSend(chann[0], trimChann)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+
 	} else if strings.HasPrefix(c, prefixChar+"play") && admin {
 		pp := strings.TrimPrefix(c, prefixChar+"play ")
 		if !strings.Contains(pp, "https://www.youtube.com/") {
@@ -280,7 +338,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			url := xurls.Strict.FindString(m.Content)
 			//s.ChannelMessageSend(m.ChannelID, "Downloading `"+arg[0]+"`")
 			youtubeDl(url, m.Message, s)
-
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -292,7 +349,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 			fileName := strings.TrimPrefix(arg[0], "https://www.youtube.com/watch?v=")
 			file := Folder + fileName + ".mp3"
-			fmt.Println(file)
 			guild, _ := s.Guild(d.GuildID)
 
 			channel := getCurrentVoiceChannel(m.Author, s, guild)
@@ -302,13 +358,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					s.ChannelMessageSend(m.ChannelID, "Must be in voice channel to play music")
 				}
 				s.UpdateStatus(0, "Streaming "+vid.Title)
-
 				dgvoice.PlayAudioFile(dgv, file, s)
-				isVConnected = true
 				return
 
 				if err != nil {
-					isVConnected = false
 					fmt.Println(err)
 				}
 			} else {
@@ -319,7 +372,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if !strings.Contains(pp, " ") {
 			/*s.ChannelMessageSend(d.ID, "Starting autoplaylist")*/ }
 	} else if strings.HasPrefix(c, prefixChar+"skip") && admin {
-		fmt.Println(dgvoice.IsSpeaking)
 		if dgvoice.IsSpeaking {
 			s.ChannelMessageSend(m.ChannelID, "Skipping...")
 			dgvoice.KillPlayer()
@@ -331,40 +383,131 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "Not currently playing")
 			s.UpdateStatus(1, "")
 		}
-	} else if strings.HasPrefix(c, prefixChar+"disconnect"){ //Borked
-		if isVConnected {
-			//s.ChannelMessageSend(m.ChannelID, "Leaving voice channel")
-			s.ChannelMessageSend(m.ChannelID, "Command temporarily disabled")
-//			err := dgv.Close()
-			if err != nil{
-				fmt.Print(err)
+	} else if strings.HasPrefix(c, prefixChar+"volume") && admin {
+		cc := strings.TrimPrefix(c, prefixChar+"volume ")
+		arg := strings.SplitAfterN(cc, " ", 1)
+		newVol, err := strconv.Atoi(arg[0])
+		if newVol > 255 {
+			newVol = 255
+		}
+		if err != nil {
+			fmt.Println(err)
+		}
+		dgvoice.Volume = newVol
+		s.ChannelMessageSend(m.ChannelID, "Download volume changed to "+arg[0])
+	} else if strings.HasPrefix(c, prefixChar+"disconnect") { //Borked
+		vDisconnect(s, d, m)
+	} else if strings.HasPrefix(c, prefixChar+"resume") {
+		if isVConnected && !dgvoice.IsSpeaking {
+			err := dgv.Speaking(true)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	} else if strings.HasPrefix(c, prefixChar+"streaming"){
+		s.UpdateStreamingStatus(3, "Doing dog things", "https://www.twitch.tv/DogBot4Discord")
+	} else if strings.HasPrefix(c, prefixChar+"join") && admin {
+		if c == prefixChar+"join" {
+			guild, _ := s.Guild(d.GuildID)
+			channel := getCurrentVoiceChannel(m.Author, s, guild)
+			vc, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
+			isVConnected = true
+			if err != nil {
+				fmt.Println(vc, err)
+				isVConnected = false
+			}
+			s.ChannelMessageSend(m.ChannelID, "Starting autoplaylist")
+			lines, err := readLines(APlaylist)
+			if err != nil {
+				s.ChannelMessageSend(m.ChannelID, err.Error())
+			}
+			for i, line := range lines {
+				fmt.Println(i, line)
+			}
+			dgv, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
+			if err != nil {
+				fmt.Println(err)
+			}
+			for i, line := range lines {
+				fmt.Println(line)
+				url := xurls.Strict.FindString(lines[i])
+				fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
+				file := Folder + fileName + ".mp3"
+				fmt.Println(file)
+				youtubeDl(url, m.Message, s)
+				if err != nil {
+					fmt.Println(err)
+				}
+				fmt.Println("Waiting for command to finish...")
+				vid, err := ytdl.GetVideoInfo(url)
+				if err != nil {
+					fmt.Println(err)
+				}
+				s.UpdateStatus(0, "Streaming "+vid.Title)
+				dgvoice.PlayAudioFile(dgv, file, s)
+				fmt.Println(dgvoice.IsSpeaking)
+			}
+			fmt.Println(dgvoice.IsSpeaking)
+		} else {
+			cc := strings.TrimPrefix(c, prefixChar+"join ")
+			arg := strings.Split(cc, " ")
+			vc, err := s.ChannelVoiceJoin(d.GuildID, arg[0], false, false)
+			isVConnected = true
+			if err != nil {
+				isVConnected = false
+				fmt.Println(vc, err)
+			}
+		}
+	} else if strings.HasPrefix(c, prefixChar+"simpask") {
+		quest := strings.TrimPrefix(m.Content, prefixChar+"simpask ")
+		arg := strings.SplitAfterN(quest, " ", 1)
+		fmt.Println(member.User.Username+" simpasked:", arg[0])
+		if strings.Contains(strings.ToLower(arg[0]), "gay") || strings.Contains(strings.ToLower(arg[0]), "homo") || strings.Contains(strings.ToLower(arg[0]), "homosexual") || strings.Contains(strings.ToLower(arg[0]), "lesbian")|| strings.Contains(strings.ToLower(arg[0]), "fag")|| strings.Contains(strings.ToLower(arg[0]), "queer"){
+			embed := discordgo.MessageEmbed{
+				Title: "",
+				Color: 10181046,
+				Fields: []*discordgo.MessageEmbedField{
+					{Name: member.User.Username+" asked:", Value: arg[0]},
+					{Name: "Response:", Value: "Use "+prefixChar+"gay instead"},
+				},
+			}
+			_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
+			if err != nil {
+				s.ChannelMessageSend(d.ID, formatError(err))
 			}
 		} else {
-			s.ChannelMessageSend(m.ChannelID, "Not connected to a voice channel")
-		}
-	} else if strings.HasPrefix(c, prefixChar+"join") && admin {
-		{
-			if c == prefixChar+"join" {
-				guild, _ := s.Guild(d.GuildID)
-				channel := getCurrentVoiceChannel(m.Author, s, guild)
-				vc, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
-				isVConnected = true
-				if err != nil {
-					fmt.Println(vc, err)
-					isVConnected = false
+			i := rand.Intn(5)
+			if strings.Contains(strings.ToLower(arg[0]), "how many") {
+				a := rand.Intn(1000000)
+				embed := discordgo.MessageEmbed{
+					Title: "",
+					Color: 10181046,
+					Fields: []*discordgo.MessageEmbedField{
+						{Name: member.User.Username + " asked:", Value: arg[0]},
+						{Name: "Response:", Value: strconv.Itoa(a)},
+					},
 				}
-
+				_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
+				if err != nil {
+					s.ChannelMessageSend(d.ID, formatError(err))
+				}
 			} else {
-		cc := strings.TrimPrefix(c, prefixChar+"join ")
-		arg := strings.Split(cc, " ")
-		vc, err := s.ChannelVoiceJoin(d.GuildID, arg[0], false, false)
-				isVConnected = true
-		if err != nil{
-			isVConnected = false
-			fmt.Println(vc, err)
+				a := [6]string{"Yes", "No", "Maybe", "Absolutely not", "Impossible", "Perhaps"}
+				embed := discordgo.MessageEmbed{
+					Title: "",
+					Color: 10181046,
+					Fields: []*discordgo.MessageEmbedField{
+						{Name: member.User.Username + " asked:", Value: arg[0]},
+						{Name: "Response:", Value: a[i]},
+					},
+				}
+				_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
+				if err != nil {
+					s.ChannelMessageSend(d.ID, formatError(err))
+				}
+			}
 		}
-		}
-	}
+
 
 	} else if strings.HasPrefix(c, prefixChar+"broom") || strings.HasPrefix(c, prefixChar+"dontbeabroom") {
 		s.ChannelMessageSend(d.ID, "https://youtu.be/sSPIMgtcQnU")
@@ -375,9 +518,13 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(c, prefixChar+"woop") {
 		s.ChannelMessageSend(d.ID, "https://www.youtube.com/watch?v=k1Oom5r-cWY")
 	} else if strings.HasPrefix(c, prefixChar+"setgame") &&  m.Author.ID == "157630049644707840" {
-		cc := strings.TrimPrefix(c, prefixChar+"setgame ")
+		cc := strings.TrimPrefix(m.Content, prefixChar+"setgame ")
 		arg := strings.SplitAfterN(cc, " ", 1)
+		if arg[0] != prefixChar+"setgame" {
 		s.UpdateStatus(0, arg[0])
+		} else {
+		s.UpdateStatus(1, "")
+		}
 
 		} else if strings.HasPrefix(c, prefixChar+"lmgtfy") {
 			cc := strings.TrimPrefix(c, prefixChar+"lmgtfy ")
@@ -405,19 +552,26 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			//fmt.Println(j)
 			if !strings.Contains(cc, "<@") {
 				s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.") } else {
-				//		user_id := strings.TrimPrefix(strings.TrimSuffix(arg[0], ">"), "<@")
+				bot_id := strings.TrimPrefix(strings.TrimSuffix(BotID, ">"), "<@")
 				if strings.Contains(arg[0], "157630049644707840") {
-					rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!157630049644707840> is 0% gay!")
+					rm, _ := s.ChannelMessageSend(m.ChannelID, arg[0]+" is 0% gay!")
 					fmt.Println(rm)
 				} else {
-					if strings.Contains(arg[0], "155481695167053824") {
-						rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is at least 300% gay!")
+					if strings.Contains(arg[0], bot_id) {
+						rm, _ := s.ChannelMessageSend(m.ChannelID, "<@"+BotID+"> is 0% gay!")
 						fmt.Println(rm)
 					} else {
-						rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
-						fmt.Println(rm)
-						fmt.Println(m.ChannelID, ""+arg[0]+"is " +j+ "% gay!")
-					} } }
+						if strings.Contains(arg[0], "155481695167053824") {
+							rm, _ := s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is at least 300% gay!")
+							fmt.Println(rm)
+						} else {
+							rm, _ := s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is "+j+"% gay!")
+							fmt.Println(rm)
+							fmt.Println(m.ChannelID, ""+arg[0]+"is "+j+"% gay!")
+						}
+					}
+				}
+			}
 		} else if strings.HasPrefix(c, prefixChar+"clear") {
 			if len(c) < 7  || !canManageMessage(s, m.Author, d) {
 			}
@@ -442,7 +596,31 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					return
 				}
 			}
-		} else if strings.HasPrefix(c, prefixChar+"info") {
+		} else if strings.HasPrefix(c, prefixChar+"clean") {
+		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
+		}
+		fmt.Println("Clearing messages...")
+		args := strings.Split(strings.Replace(c, prefixChar+"clean ", "", -1), " ")
+		if len(args) == 0 {
+			s.ChannelMessageSend(d.ID, "Invalid parameters")
+			fmt.Println("Invalid clear paramters...")
+			return
+		} else if len(args) == 2 {
+			fmt.Println("Cleaning messages from " + d.Name + " for user " + member.User.Username)
+			if i, err := strconv.ParseInt(args[1], 10, 64); err == nil {
+				clearUserChat(int(i), d, s, args[0])
+				removeLater(s, m.Message)
+				return
+			}
+		} else if len(args) == 1 {
+			fmt.Println("Cleaning " + args[0] + " messages from " + d.Name + " for user " + member.User.Username)
+			if i, err := strconv.ParseInt(args[0], 10, 64); err == nil {
+				clearChannelChat(int(i), d, s)
+				removeLater(s, m.Message)
+				return
+			}
+		}
+	} else if strings.HasPrefix(c, prefixChar+"info") {
 			fmt.Println("Sending info...")
 			embed := discordgo.MessageEmbed{
 				Title: "Info",
@@ -460,55 +638,70 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(d.ID, formatError(err))
 			}
 		} else if strings.HasPrefix(c, prefixChar+"trivia") && admin {
-			fmt.Println("Getting trivia")
-			if question, err := trivia.Getter.GetTrivia(1); err == nil {
-				a := append(question.Results[0].IncorrectAnswer, question.Results[0].CorrectAnswer)
-				for i := range a {
-					j := rand.Intn(i + 1)
-					a[i], a[j] = a[j], a[i]
+		fmt.Println("Getting trivia")
+		if question, err := trivia.Getter.GetTrivia(1); err == nil {
+			a := append(question.Results[0].IncorrectAnswer, question.Results[0].CorrectAnswer)
+			for i := range a {
+				j := rand.Intn(i + 1)
+				a[i], a[j] = a[j], a[i]
+			}
+			question.Results[0].Question = Qreplacer.Replace(question.Results[0].Question)
+			embedanswers := []*discordgo.MessageEmbedField{}
+			if len(a) == 2 {
+				embedanswers = []*discordgo.MessageEmbedField{
+					{Name: "A", Value: a[0], Inline: true},
+					{Name: "B", Value: a[1], Inline: true},
 				}
-				question.Results[0].Question = Qreplacer.Replace(question.Results[0].Question)
-				embedanswers := []*discordgo.MessageEmbedField{}
-				if len(a) == 2 {
-					embedanswers = []*discordgo.MessageEmbedField{
-						{Name: "A", Value: a[0], Inline: true},
-						{Name: "B", Value: a[1], Inline: true},
-					}
-				} else if len(a) == 4 {
-					a[0] = Qreplacer.Replace(a[0])
-					a[1] = Qreplacer.Replace(a[1])
-					a[2] = Qreplacer.Replace(a[2])
-					a[3] = Qreplacer.Replace(a[3])
+			} else if len(a) == 4 {
+				a[0] = Qreplacer.Replace(a[0])
+				a[1] = Qreplacer.Replace(a[1])
+				a[2] = Qreplacer.Replace(a[2])
+				a[3] = Qreplacer.Replace(a[3])
 
-					embedanswers = []*discordgo.MessageEmbedField{
-						{Name: "A", Value: a[0], Inline: true},
-						{Name: "B", Value: a[1], Inline: true},
-						{Name: "C", Value: a[2], Inline: true},
-						{Name: "D", Value: a[3], Inline: true},
-					}
+				embedanswers = []*discordgo.MessageEmbedField{
+					{Name: "A", Value: a[0], Inline: true},
+					{Name: "B", Value: a[1], Inline: true},
+					{Name: "C", Value: a[2], Inline: true},
+					{Name: "D", Value: a[3], Inline: true},
 				}
-				embed := discordgo.MessageEmbed{
-					Title: "Trivia",
-					Color: 10181046,
-					Description: question.Results[0].Question,
-					URL: "https://opentdb.com/",
-					Fields: embedanswers,
-				}
-				_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
-				if err != nil {
-					s.ChannelMessageSend(d.ID, formatError(err))
-				}
-				fmt.Println(question.Results[0].CorrectAnswer)
-				if question.Results[0].CorrectAnswer == "0" {fmt.Println("A")}
-				if question.Results[0].CorrectAnswer == "1" {fmt.Println("B")}
-				if question.Results[0].CorrectAnswer == "2" {fmt.Println("C")}
-				if question.Results[0].CorrectAnswer == "3" {fmt.Println("D")}
-				sendLater(s, d.ID, "The correct answer was: " + question.Results[0].CorrectAnswer)
-			} else if err != nil {
+			}
+			embed := discordgo.MessageEmbed{
+				Title:       "Trivia",
+				Color:       10181046,
+				Description: question.Results[0].Question,
+				URL:         "https://opentdb.com/",
+				Fields:      embedanswers,
+			}
+			_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
+			if err != nil {
 				s.ChannelMessageSend(d.ID, formatError(err))
 			}
-		}
+			fmt.Println(question.Results[0].CorrectAnswer)
+			if question.Results[0].CorrectAnswer == "0" {
+				fmt.Println("A")
+			}
+			if question.Results[0].CorrectAnswer == "1" {
+				fmt.Println("B")
+			}
+			if question.Results[0].CorrectAnswer == "2" {
+				fmt.Println("C")
+			}
+			if question.Results[0].CorrectAnswer == "3" {
+				fmt.Println("D")
+			}
+			sendLater(s, d.ID, "The correct answer was: "+question.Results[0].CorrectAnswer)
+		} else if err != nil {
+			s.ChannelMessageSend(d.ID, formatError(err))
+		} else if dgvoice.IsSpeaking == false && isVConnected == true {
+
+			vDisconnect(s, d, m)
 	}
+}
+
+
+	}
+
+
 func countChannels(guilds []*discordgo.Guild) (channels int) {
 	for i := 0; i < len(guilds); i++ {
 		channels = len(guilds[i].Channels) + channels
@@ -626,7 +819,6 @@ func sendLater(s *discordgo.Session, cid string, msg string) {
 	<- timer.C
 	s.ChannelMessageSend(cid, msg)
 }
-
 
 //structs
 type CatResponse struct {
@@ -757,6 +949,7 @@ func youtubeDl(url string, m *discordgo.Message, s *discordgo.Session) (io.Reade
 	}
 	return nil, nil
 }
+
 func getCurrentVoiceChannel(user *discordgo.User, session *discordgo.Session, guild *discordgo.Guild) *discordgo.Channel {
 	for _, vs := range guild.VoiceStates {
 		if vs.UserID == user.ID {
@@ -766,3 +959,44 @@ func getCurrentVoiceChannel(user *discordgo.User, session *discordgo.Session, gu
 	}
 	return nil
 }
+
+func readLines(path string) ([]string, error) {
+	 file, err := os.Open(path)
+	 if err != nil {
+		 fmt.Println(err)
+	 }
+	 defer func() {
+		 file.Close()
+	 }()
+
+	 var lines []string
+	 scanner := bufio.NewScanner(file)
+	 for scanner.Scan() {
+	 lines = append(lines, scanner.Text())
+ 	}
+	return lines, scanner.Err()
+}
+
+func vDisconnect(s *discordgo.Session, d *discordgo.Channel, m *discordgo.MessageCreate) {
+	if isVConnected {
+		guild, _ := s.Guild(d.GuildID)
+		gCVC := getCurrentVoiceChannel(m.Author, s, guild)
+		if gCVC == nil {
+			s.ChannelMessageSend(d.ID, "Must be connected to a voice channel to request a disconnect")
+		} else {
+			dgvc, err := s.ChannelVoiceJoin(d.GuildID, gCVC.ID, true, true)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				dgvc.Disconnect()
+				dgvoice.IsSpeaking = false
+			}
+		}
+	} else {
+		s.ChannelMessageSend(d.ID, "Not in a voice channel")
+	}
+}
+
+//TODO: Allow disabling/enabling all commands
+//TODO: Custom owner. Should be easy but I forgot to add
+//TODO: Actually get people to look at the bot I am literally the only person that uses this
