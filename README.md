@@ -67,7 +67,7 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .simpask < Yes/No question >
  - .lmgtfy <string>
  - .setgame <string> (Sets game in bot's profile)
- - .streaming (Currently only goes to my stream TODO: Custom streams) (Admin only)
+ - .streaming (Currently only goes to my stream TODO: Custom streams) (TODO: Admin only)
  
  
  --Voice Chat--
