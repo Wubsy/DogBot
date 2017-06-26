@@ -53,22 +53,30 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .doge < Non-zero positive num up to 15 >
  - .snek < Non-zero positive num up to 15 >
  - .gay < @user-id > (Still in development)
- - .trivia (Only does one question | Answer to question will be a letter TODO: Admin only)
+ - .trivia (Only does one question | Answer to question will be a letter ~~TODO: Admin only~~)
  - .mute < @user-id > (Mutes only per text channel) (Admin Only)
- - .muteall < @user-id > (Mutes in all text channels) (Admin Only) 
+ - .allmute < @user-id > (Mutes in all text channels) (Admin Only) 
  - .enablefilter (Enables chat filter | By default only does 'traps arent gay' and the like. TODO: Admin set filters)
  - .removefilter (Disables chat filter)
  - .clear < Non-zero positive num >
- - .info (Shows bot info. Currently working on displaying both links) (BROKEN)
+ - .info (Shows bot info. Currently working on displaying both links)
  - .broom (Sends message containing [video](https://youtu.be/sSPIMgtcQnU). Same as .dontbeabroom)
  - .rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
  - .vktrs (Sends message containing [video](https://www.youtube.com/watch?v=Iwuy4hHO3YQ))
  - .woop (Sends message containing [video](https://www.youtube.com/watch?v=k1Oom5r-cWY))
+ - .simpask < Yes/No question >
+ - .lmgtfy <string>
+ - .setgame <string> (Sets game in bot's profile)
+ - .streaming (Currently only goes to my stream TODO: Custom streams) (Admin only)
  
- --Music--
+ 
+ --Voice Chat--
  
  - .play < YouTube link starting with https://www.youtube.com/ > (Downloads and plays a video in format https://youtube.com/watch?v-) 
  - .skip (Skips currently playing video)
+ - .disconnect (Leaves the user's voice channel)
+ - .volume (Finnicky way to change download volume | Not recommended)
+ - .fplay <file name without .mp3> (Only supports mp3 at the moment)
   
 # Using the Dev version
 [You can find the dev version here](https://github.com/Wubsy/DogBot/tree/dev)
@@ -79,4 +87,4 @@ As of version 0.5.7, I have started building my go files into executables. Becau
 #
 You can use a .bat file and put something like `BotApp-0.0.1.exe -t` followed by your bot token in it and run it in the same directory as the executable. 
 
-[Download Generic Executable](http://willbusby.us/downloads/)
+[Download Generic Executable or Premade DogBot](http://willbusby.us/downloads/)
