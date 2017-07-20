@@ -17,7 +17,6 @@ import (
 	"io"
 	"os"
 	"bufio"
-	//"github.com/bwmarrin/discordgo" //Disabled because my fork has more functionality
 	"github.com/rylio/ytdl"
 	"github.com/valyala/fasthttp"
 	"github.com/Time6628/OpenTDB-Go"
@@ -25,6 +24,7 @@ import (
 	"github.com/Wubsy/dgvoice"
 	"github.com/bwmarrin/discordgo"
 	//"github.com/gorilla/websocket"
+	"github.com/garyburd/redigo/redis"
 )
 
 func init() {
@@ -33,6 +33,7 @@ func init() {
 }
 
 var (
+	redisAddr = "localhost:6379" //ipv4 followed by port number. I only support redis and redis default port is 6379
 	token string
 	BotID string
 	client = fasthttp.Client{ReadTimeout: time.Second * 10, WriteTimeout: time.Second * 10}
@@ -43,7 +44,7 @@ var (
 	prefixChar = "." // Don't use  # and @ because it might mess with channels
 	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.6.5"
+	version = "0.6.6"
 	isVConnected = false
 	APlaylist = "autoplaylist.txt"
 	triviaStatus = false
@@ -283,8 +284,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			getJson("http://random.cat/meow", &j)
 			s.ChannelMessageSend(d.ID, j.URL)
 		} else {
-			if i > 15 || i < 0 {
+			if i > 15 {
 				i = 15
+			}
+			if i < 0 {
+				i = 1
 			}
 			e := ""
 			for b := int64(0); b < i; b++ {
@@ -321,8 +325,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(d.ID, j.URL)
 			}
 		} else {
-			if i > 15 || i < 0 {
+			if i > 15 {
 				i = 15
+			}
+			if i < 0 {
+				i = 1
 			}
 			e := ""
 			for b := int64(0); b < i; b++ {
@@ -366,7 +373,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						s.UpdateStatus(0, "Streaming "+vid.Title)
 					}
 
-					dgvoice.PlayAudioFile(dgv, "download\\"+arg[0]+".mp3", s)
+					err1 := dgvoice.PlayAudioFile(dgv, "download\\"+arg[0]+".mp3", s)
+					if err1 != nil {
+						fmt.Println(err1)
+						dgvoice.IsSpeaking = false
+					}
 				} else {
 					fmt.Println("Error playing file")
 				}
@@ -423,9 +434,17 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				}
 				if playSkip && dgvoice.IsSpeaking {
 					dgvoice.KillPlayer()
-					dgvoice.PlayAudioFile(dgv, file, s)
+					err := dgvoice.PlayAudioFile(dgv, file, s)
+					if err != nil {
+						fmt.Println(err)
+						dgvoice.IsSpeaking = false
+					}
 				} else {
-					dgvoice.PlayAudioFile(dgv, file, s)
+					err := dgvoice.PlayAudioFile(dgv, file, s)
+					if err != nil {
+						fmt.Println(err)
+						dgvoice.IsSpeaking = false
+					}
 				}
 				return
 
@@ -447,7 +466,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.UpdateStatus(1, "")
 			return
 		}
-		if dgvoice.IsSpeaking == false {
+		if !dgvoice.IsSpeaking {
 			s.ChannelMessageSend(m.ChannelID, "Not currently playing")
 			s.UpdateStatus(1, "")
 		}
@@ -457,6 +476,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			dgvoice.IsSpeaking = false
 		}
 		vDisconnect(s, d, m)
+		dgvoice.IsSpeaking = false
 	} else if strings.HasPrefix(c, prefixChar+"streaming") {
 		s.UpdateStreamingStatus(3, "Doing dog things", "https://www.twitch.tv/DogBot4Discord")
 	} else if strings.HasPrefix(c, prefixChar+"autoplay") && admin {
@@ -484,7 +504,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				s.ChannelMessageSend(m.ChannelID, "Not ready to start playlist")
 			}
 			for i, line := range lines {
-				if listReady && !dgvoice.IsSpeaking{
+				if listReady && !dgvoice.IsSpeaking {
 					url := xurls.Strict.FindString(lines[i])
 					fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
 					file := Folder + fileName + ".mp3"
@@ -497,7 +517,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						fmt.Println(err, line)
 					}
 					s.UpdateStatus(0, vid.Title)
-					dgvoice.PlayAudioFile(dgv, file, s)
+					err1 := dgvoice.PlayAudioFile(dgv, file, s)
+					if err1 != nil {
+						fmt.Println(err1)
+						dgvoice.IsSpeaking = false
+					}
 				} else {
 					return
 				} //Sloppy mess. Did this at 1 AM and can't think but I know it goes here somewhere :P
@@ -506,6 +530,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			dgvoice.IsSpeaking = false
 		}
 	} else if strings.HasPrefix(c, prefixChar+"join") {
+		if c == prefixChar+"join"{
 		guild, _ := s.Guild(d.GuildID)
 		channel := getCurrentVoiceChannel(m.Author, s, guild)
 		vc, err := s.ChannelVoiceJoin(d.GuildID, channel.ID, false, true)
@@ -513,15 +538,20 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil {
 			fmt.Println(vc, err)
 			isVConnected = false
-		} else {
-		cc := strings.TrimPrefix(c, prefixChar+"join ")
-		arg := strings.Split(cc, " ")
-		vc, err := s.ChannelVoiceJoin(d.GuildID, arg[0], false, false)
-		isVConnected = true
-		if err != nil {
-			isVConnected = false
-			fmt.Println(vc, err)
 		}
+		} else {
+			cc := strings.TrimPrefix(c, prefixChar+"join ")
+			arg := strings.Split(cc, " ")
+			vc, err := s.ChannelVoiceJoin(d.GuildID, arg[0], false, false)
+			isVConnected = true
+			if err != nil {
+				isVConnected = false
+				fmt.Println(err)
+			}
+			if vc == nil {
+				isVConnected = false
+				fmt.Println(vc)
+			}
 
 		}
 	} else if c == prefixChar+"skiplist" {
@@ -588,60 +618,85 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(c, prefixChar+"woop") {
 		s.ChannelMessageSend(d.ID, "https://www.youtube.com/watch?v=k1Oom5r-cWY")
 	} else if strings.HasPrefix(c, prefixChar+"playskip") {
-		if !playSkip {playSkip = true} else {playSkip = false}
+		if !playSkip {
+			playSkip = true
+		} else {
+			playSkip = false
+		}
 
 		s.ChannelMessageSend(d.ID, "Allow skipping a video and playing a new one: "+strconv.FormatBool(playSkip)+". Do ***NOT*** use this with playlists. Guaranteed a bad time.")
-	} else if strings.HasPrefix(c, prefixChar+"setgame") &&  m.Author.ID == "157630049644707840" {
+	} else if strings.HasPrefix(c, prefixChar+"setgame") && m.Author.ID == "157630049644707840" {
 		cc := strings.TrimPrefix(m.Content, prefixChar+"setgame ")
 		arg := strings.SplitAfterN(cc, " ", 1)
 		if arg[0] != prefixChar+"setgame" {
-		s.UpdateStatus(0, arg[0])
+			s.UpdateStatus(0, arg[0])
 		} else {
-		s.UpdateStatus(1, "")
+			s.UpdateStatus(1, "")
 		}
 
-		} else if strings.HasPrefix(c, prefixChar+"lmgtfy") {
-			cc := strings.TrimPrefix(c, prefixChar+"lmgtfy ")
-			arg := strings.SplitAfterN(cc, " ", 1)
-			if len(arg) == 0 {
-				s.ChannelMessageSend(d.ID, "Query is empty.")
-			} else if arg[0] == prefixChar+"lmgtfy" {
-				s.ChannelMessageSend(d.ID, "Query is empty.")
-			} else {
-				str := Lreplacer.Replace(arg[0])
-				oldUrl := "http://lmgtfy.com/?q="+str+""
-				url := UrlShortener{}
-				url.short(oldUrl, TINY_URL)
-				fmt.Println(url.ShortUrl)
-				fmt.Println(url.OriginalUrl)
-				em, _ := s.ChannelMessageSend(m.ChannelID, "<"+url.ShortUrl+">")
-				fmt.Println(em)
+	} else if strings.HasPrefix(c, prefixChar+"lmgtfy") {
+		cc := strings.TrimPrefix(c, prefixChar+"lmgtfy ")
+		arg := strings.SplitAfterN(cc, " ", 1)
+		if len(arg) == 0 {
+			s.ChannelMessageSend(d.ID, "Query is empty.")
+		} else if arg[0] == prefixChar+"lmgtfy" {
+			s.ChannelMessageSend(d.ID, "Query is empty.")
+		} else {
+			str := Lreplacer.Replace(arg[0])
+			oldUrl := "http://lmgtfy.com/?q=" + str + ""
+			url := UrlShortener{}
+			url.short(oldUrl, TINY_URL)
+			em, _ := s.ChannelMessageSend(m.ChannelID, "<"+url.ShortUrl+">")
+			if em == nil{
+				fmt.Println("Error shortening URL")
 			}
-			removeNow(s, m.Message)
-		}else if strings.HasPrefix(c, prefixChar+"gay") {
-			cc := strings.TrimPrefix(c, prefixChar+"gay ")
-			arg := strings.Split(cc, " ")
-			i := rand.Intn(100)
-			j := strconv.Itoa(i)
-			if !strings.Contains(cc, "<@") {
-				s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.")
+		}
+		removeNow(s, m.Message)
+	} else if strings.HasPrefix(c, prefixChar+"gay") {
+		cc := strings.TrimPrefix(c, prefixChar+"gay ")
+		arg := strings.Split(cc, " ")
+		i := rand.Intn(100)
+		j := strconv.Itoa(i)
+		if !strings.Contains(cc, "<@") {
+			s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.")
+		} else {
+			bot_id := strings.TrimPrefix(strings.TrimSuffix(BotID, ">"), "<@")
+			if strings.Contains(arg[0], "157630049644707840") {
+				s.ChannelMessageSend(m.ChannelID, arg[0]+" is 0% gay!")
 			} else {
-				bot_id := strings.TrimPrefix(strings.TrimSuffix(BotID, ">"), "<@")
-				if strings.Contains(arg[0], "157630049644707840") {
-					s.ChannelMessageSend(m.ChannelID, arg[0]+" is 0% gay!")
+				if strings.Contains(arg[0], bot_id) {
+					s.ChannelMessageSend(m.ChannelID, "<@"+BotID+"> is 0% gay!")
 				} else {
-					if strings.Contains(arg[0], bot_id) {
-						s.ChannelMessageSend(m.ChannelID, "<@"+BotID+"> is 0% gay!")
+					if strings.Contains(arg[0], "155481695167053824") {
+						s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is at least 300% gay!")
 					} else {
-						if strings.Contains(arg[0], "155481695167053824") {
-							s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is at least 300% gay!")
-						} else {
-							s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is "+j+"% gay!")
-						}
+						s.ChannelMessageSend(m.ChannelID, ""+arg[0]+"is "+j+"% gay!")
 					}
 				}
 			}
-		} else if strings.HasPrefix(c, prefixChar+"clear") {
+		}
+	} else if strings.HasPrefix(c, prefixChar+"createaccount") {
+		err := createAccount(m.Author.ID, 200, d, s)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else if strings.HasPrefix(c, prefixChar+"flip") {
+		bet := strings.TrimPrefix(c, prefixChar+"flip ")
+		if bet == "" {
+			bet = strconv.Itoa(1)
+		}
+		betInt, err := strconv.Atoi(bet)
+		if err != nil {
+			s.ChannelMessageSend(d.ID, "Invalid ***___BET___***.")
+			return
+		}
+		removeCredsBet(m.Author.ID, betInt, d, s)
+		} else if strings.HasPrefix(c, prefixChar+"credits"){
+		err := getCredits(m.Author.ID, d, s)
+		if err != nil{
+			fmt.Println(err)
+		}
+	} else if strings.HasPrefix(c, prefixChar+"clear") {
 			if len(c) < 7  || !canManageMessage(s, m.Author, d) {
 			}
 			fmt.Println("Clearing messages...")
@@ -665,7 +720,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					return
 				}
 			}
-		} else if strings.HasPrefix(c, prefixChar+"clean") {
+	} else if strings.HasPrefix(c, prefixChar+"clean") {
 		if len(c) < 7  || !canManageMessage(s, m.Author, d) {
 		}
 		fmt.Println("Clearing messages...")
@@ -706,7 +761,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				s.ChannelMessageSend(d.ID, formatError(err))
 			}
-		} else if strings.HasPrefix(c, prefixChar+"trivia") && admin {
+	} else if strings.HasPrefix(c, prefixChar+"trivia") && admin {
 		if triviaStatus {
 			s.ChannelMessageSend(d.ID, "Trivia already running.")
 		} else {
@@ -773,8 +828,113 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				triviaStatus = false
 			})
 		}
+	} else if strings.HasPrefix(c, prefixChar+"setcredits") {
+		credits, err := strconv.Atoi(strings.TrimPrefix(c, prefixChar+"setcredits "))
+		if err != nil{
+			credits = 200
+			return
+		}
+		setCredits(m.Author.ID, credits, d, s)
 	}
 
+}
+
+func removeCredsBet(id string, toRemove int, channel *discordgo.Channel, session *discordgo.Session) (err error) {
+	c, err := redis.Dial("tcp", redisAddr)
+	if err != nil {
+		return err
+	}
+	curCredsGet, err := c.Do("GET", id)
+	if curCredsGet == nil{
+		createAccount(id, 200, channel, session)
+		removeCredsBet(id, toRemove, channel, session)
+		return
+	}
+	curCredsByte, err := strconv.Atoi(string(curCredsGet.([]byte)))
+	if curCredsByte == 0 {
+		session.ChannelMessageSend(channel.ID, "Insufficient balance.")
+		return
+	}
+	if toRemove <= 0 {
+		session.ChannelMessageSend(channel.ID, "Invalid ***___BET___***.")
+		return
+	}
+	curCreds := int(curCredsByte) - toRemove
+	if curCreds < 0 {
+		curCreds = 0
+	}
+
+	c.Do("SET", id, curCreds)
+
+	i := rand.Intn(2)
+	if i == 1 {
+		curCredsNew := curCreds + toRemove*2
+		c.Do("SET", id, curCredsNew)
+		session.ChannelMessageSend(channel.ID, "You won the flip and now have "+strconv.Itoa(curCredsNew)+" credits!")
+	} else {
+		session.ChannelMessageSend(channel.ID, "You lost the flip and now have "+strconv.Itoa(curCreds)+ " credits.")
+	}
+
+
+	return err
+}
+
+func setCredits(id string, setCreds int, channel *discordgo.Channel, session *discordgo.Session) (err error){
+	c, err := redis.Dial("tcp", redisAddr)
+	if err != nil {
+		return err
+	}
+	_, errDo := c.Do("SET", id, setCreds)
+	return errDo
+}
+
+func createAccount(id string, defCreds int, channel *discordgo.Channel, session *discordgo.Session) (err error){
+	c, err := redis.Dial("tcp", redisAddr)
+	if err != nil {
+		return err
+	}
+	curCredsGet, err := c.Do("GET", id)
+	if curCredsGet == nil {
+		_, err := c.Do("SET", id, defCreds)
+		if err != nil{
+			fmt.Println(err)
+		}
+		curCreds, err := c.Do("GET", id)
+		session.ChannelMessageSend(channel.ID, "Account Created! <@"+id+">, you now have "+string(curCreds.([]byte))+" credits!")
+		defer c.Close()
+		return err
+	} else {
+		curCreds, err := c.Do("GET", id)
+		curCreds, ok := curCreds.([]byte)
+		if !ok{
+			fmt.Println(err)
+			return err
+		}
+		session.ChannelMessageSend(channel.ID, "You already have an account, <@" + id + ">. You have "+string(curCreds.([]byte))+" credits.")
+		return err
+	}
+}
+
+func getCredits(id string, channel *discordgo.Channel, session *discordgo.Session) (err error){
+	c, err := redis.Dial("tcp", redisAddr)
+	if err != nil {
+		session.ChannelMessageSend(channel.ID, "Could not connect to database.")
+		return err
+	}
+	curCreds, err := c.Do("GET", id)
+	if err != nil  {
+		fmt.Println(err)
+		return err
+
+	} else {
+		curCreds, ok := curCreds.([]byte)
+		if !ok{
+			return err
+		}
+		session.ChannelMessageSend(channel.ID, "<@" + id + ">, you have " + string(curCreds) + " credits.")
+	}
+	defer c.Close()
+	return err
 }
 
 func doLater(i func()) {
