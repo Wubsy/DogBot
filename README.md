@@ -77,7 +77,6 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .play < YouTube link starting with https://www.youtube.com/ > (Downloads and plays a video in format https://youtube.com/watch?v-) 
  - .skip (Skips currently playing video)
  - .disconnect (Leaves the user's voice channel)
- - .volume (Finnicky way to change download volume | Not recommended)
  - .fplay <file name without .mp3> (Only supports mp3 at the moment)
   
 # Using the Dev version
