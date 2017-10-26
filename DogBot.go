@@ -1,3 +1,96 @@
+package main
+
+import (
+	"fmt"
+	"strings"
+	"flag"
+	"time"
+	"regexp"
+	"encoding/json"
+	"encoding/xml"
+	"strconv"
+	"errors"
+	"bytes"
+	"math/rand"
+	"net/http"
+	"io/ioutil"
+	"net/url"
+	"io"
+	"os"
+	"bufio"
+	"github.com/rylio/ytdl"
+	"github.com/valyala/fasthttp"
+	"github.com/Time6628/OpenTDB-Go"
+	"github.com/mvdan/xurls"
+	"github.com/Wubsy/dgvoice"
+	"github.com/bwmarrin/discordgo"
+	"github.com/garyburd/redigo/redis"
+	"github.com/knspriggs/go-twitch"
+	"github.com/Wubsy/GOWikia-B"
+)
+
+
+
+var (
+	announcementChannel = ""
+	twitchCheckEnable = true
+	client_id = ""
+	redisAddr = "localhost:6379"
+	token string
+	BotID string
+	client = fasthttp.Client{ReadTimeout: time.Second * 10, WriteTimeout: time.Second * 10}
+	trivia = OpenTDB_Go.New(client)
+	nofilter []string
+	Folder = "download/"
+	prefixChar = "." // Don't use  # and @ because it might mess with channels
+	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
+	Lreplacer = strings.NewReplacer(" ", "+")
+	version = "0.6.8"
+	isVConnected = false
+	APlaylist = "autoplaylist.txt"
+	triviaStatus = false
+	playSkip = true
+	Bot *discordgo.User
+	articleName string
+	articleUrl string
+	articleId int
+	totalItems int
+	twitchUsers = []string{""}
+	commands = []string{
+	prefixChar + "removefilter",
+	prefixChar + "enablefilter",
+	prefixChar + "dogbot",
+	prefixChar + "mute",
+	prefixChar + "allmute",
+	prefixChar + "cat",
+	prefixChar + "doge",
+	prefixChar + "leave",
+	prefixChar + "fplay",
+	prefixChar + "csay",
+	prefixChar + "play",
+	prefixChar + "skip",
+	prefixChar + "disconnect or "+prefixChar+"dc",
+	prefixChar + "streaming",
+	prefixChar + "simpask",
+	prefixChar + "lmgtfy",
+	prefixChar + "gay",
+	prefixChar + "clean",
+	prefixChar + "info",
+	prefixChar + "playskip",
+	prefixChar + "skiplist",
+	prefixChar + "trivia",
+	prefixChar + "setcredits",
+	prefixChar + "credits",
+	prefixChar + "flip",
+	prefixChar + "slots",
+	prefixChar + "daily",
+	prefixChar + "srsearch",}
+	queue = []string{}
+	nowPlaying string
+	logging bool
+	firstpasstwitch = true
+)
+
 func init() {
 	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.BoolVar(&logging, "l", true, "Enables/Disables Printing Messages to CMD")
