@@ -45,7 +45,7 @@ var (
 	prefixChar = "d!" // Don't use  # and @ because it might mess with channels
 	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
 	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.6.7"
+	version = "0.6.8"
 	isVConnected = false
 	APlaylist = "autoplaylist.txt"
 	triviaStatus = false
