@@ -1,96 +1,3 @@
-package main
-
-import (
-	"fmt"
-	"strings"
-	"flag"
-	"time"
-	"regexp"
-	"encoding/json"
-	"encoding/xml"
-	"strconv"
-	"errors"
-	"bytes"
-	"math/rand"
-	"net/http"
-	"io/ioutil"
-	"net/url"
-	"io"
-	"os"
-	"bufio"
-	"github.com/rylio/ytdl"
-	"github.com/valyala/fasthttp"
-	"github.com/Time6628/OpenTDB-Go"
-	"github.com/mvdan/xurls"
-	"github.com/Wubsy/dgvoice"
-	"github.com/bwmarrin/discordgo"
-	"github.com/garyburd/redigo/redis"
-	"github.com/knspriggs/go-twitch"
-	"github.com/Wubsy/GOWikia-B"
-)
-
-
-
-var (
-	announcementChannel = ""
-	twitchCheckEnable = true
-	client_id = ""
-	redisAddr = ""
-	token string
-	BotID string
-	client = fasthttp.Client{ReadTimeout: time.Second * 10, WriteTimeout: time.Second * 10}
-	trivia = OpenTDB_Go.New(client)
-	nofilter []string
-	Folder = "download/"
-	prefixChar = "d!" // Don't use  # and @ because it might mess with channels
-	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
-	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.6.8"
-	isVConnected = false
-	APlaylist = "autoplaylist.txt"
-	triviaStatus = false
-	playSkip = true
-	Bot *discordgo.User
-	articleName string
-	articleUrl string
-	articleId int
-	totalItems int
-	twitchUsers = []string{""}
-	commands = []string{
-	prefixChar + "removefilter",
-	prefixChar + "enablefilter",
-	prefixChar + "dogbot",
-	prefixChar + "mute",
-	prefixChar + "allmute",
-	prefixChar + "cat",
-	prefixChar + "doge",
-	prefixChar + "leave",
-	prefixChar + "fplay",
-	prefixChar + "csay",
-	prefixChar + "play",
-	prefixChar + "skip",
-	prefixChar + "disconnect or "+prefixChar+"dc",
-	prefixChar + "streaming",
-	prefixChar + "simpask",
-	prefixChar + "lmgtfy",
-	prefixChar + "gay",
-	prefixChar + "clean",
-	prefixChar + "info",
-	prefixChar + "playskip",
-	prefixChar + "skiplist",
-	prefixChar + "trivia",
-	prefixChar + "setcredits",
-	prefixChar + "credits",
-	prefixChar + "flip",
-	prefixChar + "slots",
-	prefixChar + "daily",
-	prefixChar + "srsearch",}
-	queue = []string{}
-	nowPlaying string
-	logging bool
-	firstpasstwitch = true
-)
-
 func init() {
 	flag.StringVar(&token, "t", "", "Bot Token")
 	flag.BoolVar(&logging, "l", true, "Enables/Disables Printing Messages to CMD")
@@ -638,7 +545,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 				}
 
-				if !dgvoice.IsSpeaking && dgvoice.Run == nil {
+				if !dgvoice.IsSpeaking {
 					url := "https://www.youtube.com/watch?v=" + arg[0]
 					vid, err := ytdl.GetVideoInfo(url)
 					if err != nil {
@@ -693,8 +600,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				queue = append(queue, arg[0])
 				s.ChannelMessageSend(d.ID, "Added `"+arg[0]+"` to the queue")
 				return
+			} else {
+				queue = append(queue, arg[0])
 			}
-			dgvoice.IsSpeaking = true
+
 
 			url := xurls.Strict.FindString(m.Content)
 			youtubeDl(url, m.Message, s)
@@ -708,13 +617,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			for j := 0; j < len(queue); j++ {
 				var fileName string
 				if strings.Contains(url, "https://youtu.be/"){
-					fileName = strings.TrimPrefix(url, "https://youtu.be/")
+					fileName = strings.TrimPrefix(queue[0], "https://youtu.be/")
 				} else {
-					fileName = strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
+					fileName = strings.TrimPrefix(queue[0], "https://www.youtube.com/watch?v=")
 				}
 				file := Folder + fileName + ".mp3"
-
-				fmt.Println(queue)
 
 				guild, _ := s.Guild(d.GuildID)
 				channel := getCurrentVoiceChannel(m.Author, s, guild)
@@ -744,25 +651,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 						}
 					}
 
-					if dgvoice.IsSpeaking {
-						nowPlaying = vid.Title
-						dgvoice.IsSpeaking = false
-						err = dgvoice.PlayAudioFile(dgv, file, s)
-						nowPlaying = ""
-						removeFromQueue()
-						continue
-						if err != nil {
-							nowPlaying = ""
-							fmt.Println(err)
-							dgvoice.IsSpeaking = false
-							return
-						}
-
-					} else if !dgvoice.IsSpeaking && dgvoice.Run == nil{
+					if !dgvoice.IsSpeaking {
 						nowPlaying = vid.Title
 						err := dgvoice.PlayAudioFile(dgv, file, s)
+						defer removeFromQueue()
 						nowPlaying = ""
-						removeFromQueue()
 						continue
 						if err != nil {
 							nowPlaying = ""
@@ -789,11 +682,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			dgvoice.IsSpeaking = false
 			s.UpdateStatus(1, "")
 			return
-		}
-		if dgvoice.Run == nil{
-			s.ChannelMessageSend(m.ChannelID, "Not currently playing")
-			dgvoice.IsSpeaking = false
-			s.UpdateStatus(1, "")
 		}
 	} else if strings.HasPrefix(c, prefixChar+"disconnect") || strings.HasPrefix(c, prefixChar+"dc")  {
 		if dgvoice.IsSpeaking {
@@ -846,7 +734,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					}
 				}
 			}
-			if !dgvoice.IsSpeaking && dgvoice.Run == nil{
+			if !dgvoice.IsSpeaking {
 				dgvoice.ListReady = true
 			} else {
 				s.ChannelMessageSend(m.ChannelID, "Not ready to start playlist")
@@ -858,7 +746,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			var songmessage *discordgo.Message
 
 			for i := 0; i < len(lines); i++ {
-				if dgvoice.ListReady && !dgvoice.IsSpeaking && dgvoice.Run == nil{
+				if dgvoice.ListReady && !dgvoice.IsSpeaking {
 					url := xurls.Strict.FindString(lines[i])
 					fileName := strings.TrimPrefix(url, "https://www.youtube.com/watch?v=")
 					file := Folder + fileName + ".mp3"
