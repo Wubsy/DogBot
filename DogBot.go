@@ -43,9 +43,9 @@ var (
 	nofilter []string
 	Folder = "download/"
 	prefixChar = "." // Don't use  # and @ because it might mess with channels
-	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'")
+	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'") //Ugly and unneeded 
 	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.6.8"
+	version = "0.6.8" //Late
 	isVConnected = false
 	APlaylist = "autoplaylist.txt"
 	triviaStatus = false
@@ -56,7 +56,7 @@ var (
 	articleId int
 	totalItems int
 	twitchUsers = []string{""}
-	commands = []string{
+	commands = []string{ //garbage. TODO: fix
 	prefixChar + "removefilter",
 	prefixChar + "enablefilter",
 	prefixChar + "dogbot",
@@ -100,7 +100,7 @@ func init() {
 func main()  {
 	go forever()
 
-	url := "http://bots.dogbot.us/DogBotVer"
+	url := "http://bots.dogbot.us/DogBotVer" //setup rest and not use html
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Could not reach version check server.")
@@ -329,6 +329,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//A really janky way to rate limit
+	//TODO: Fix
 	/*
 	if m.Author.ID != "157630049644707840" {
 		tNow := time.Now()
@@ -355,7 +356,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil{
 			s.ChannelMessageSend(d.ID, err.Error())
 		}
-		for i := 0; i >= 0 && i < len(commands); i++ {
+		for i := 0; i >= 0 && i < len(commands); i++ { //TODO: Cleanup
 			//This is a pretty bad way to do this but eh
 			if commands[i] == prefixChar+"removefilter"{
 				comment = "Disables chat filter in the channel it is run in"
@@ -574,7 +575,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			e := ""
 			for b := int64(0); b < i; b++ {
-				getJson("http://random.cat/meow", &j)
+				getJson("http://random.cat/meow", &j) //Update for new API(http:\/\/aws.random.cat\/meow)
 				e = e + j.URL + " "
 			}
 			s.ChannelMessageSend(d.ID, e)
