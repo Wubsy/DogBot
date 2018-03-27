@@ -7,18 +7,20 @@ If you're too tired to mess with stuff or don't know how, invite my bot using th
 
 
 
-# Libraries
+# Libraries (TODO: Update list)
 Requires:
 ```
-github.com/Time6628/OpenTDB-Go
-github.com/rylio/ytdl
-github.com/valyala/fasthttp
-github.com/bwmarrin/discordgo
-github.com/mvdan/xurls
-github.com/Wubsy/dgvoice
+"github.com/rylio/ytdl"
+	"github.com/valyala/fasthttp"
+	"github.com/Time6628/OpenTDB-Go"
+	"github.com/mvdan/xurls"
+	"github.com/Wubsy/dgvoice"
+	"github.com/bwmarrin/discordgo"
+	"github.com/garyburd/redigo/redis"
+	"github.com/knspriggs/go-twitch"
+	"github.com/Wubsy/GOWikia-B"
 ```
 It now also requires you to have ffmpeg in the directory of the program.
-# The audio plays at 100% as I have yet to find a way to change this. You MUST turn it down client-side or say goodbye to your ears
 # Setup
 ## Downloading Libraries
 Implying you already have Golang installed correctly you should be able to do the following command in command prompt
@@ -50,14 +52,13 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  This version is different because I'm constantly changing how things work. At the time of editing this file, these are the commands.
  - cat < Non-zero positive num up to 15 >
  - doge < Non-zero positive num up to 15 >
- - snek < Non-zero positive num up to 15 >
  - gay < @user-id > (Still in development)
  - trivia (Only does one question | Answer to question will be a letter ~~TODO: Admin only~~)
  - mute < @user-id > (Mutes only per text channel) (Admin Only)
  - allmute < @user-id > (Mutes in all text channels) (Admin Only) 
  - enablefilter (Enables chat filter | By default only does 'traps arent gay' and the like. TODO: Admin set filters)
  - removefilter (Disables chat filter)
- - clear < Non-zero positive num >
+ - clear < Non-zero positive num > (TODO: Disallow negative num)
  - info (Shows bot info. Currently working on displaying both links)
  - broom (Sends message containing [video](https://youtu.be/sSPIMgtcQnU). Same as .dontbeabroom)
  - rick (Sends message containing [video](https://www.youtube.com/watch?v=dQw4w9WgXcQ))
@@ -87,4 +88,5 @@ As of version 0.5.7, I have started building my go files into executables. Becau
 #
 You can use a .bat file and put something like `BotApp-0.0.1.exe -t` followed by your bot token in it and run it in the same directory as the executable. 
 
+Generic Executable will not be regularly updated.
 [Download Generic Executable or Premade DogBot](http://willbusby.us/downloads/)
