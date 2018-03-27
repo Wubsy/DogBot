@@ -79,7 +79,7 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  - .disconnect (Leaves the user's voice channel)
  - .fplay <file name without .mp3> (Only supports mp3 at the moment)
   
-# Using the Dev version
+# Using the Dev version [Outdated]
 [You can find the dev version here](https://github.com/Wubsy/DogBot/tree/dev)
 It's probably going to be broken most of the time. Make sure you read all of that one's readme
 
