@@ -32,10 +32,10 @@ import (
 
 
 var (
-	announcementChannel = ""
+	announcementChannel string
 	twitchCheckEnable = true
-	client_id = ""
-	redisAddr = "localhost:6379"
+	client_id string
+	redisAddr string
 	token string
 	BotID string
 	client = fasthttp.Client{ReadTimeout: time.Second * 10, WriteTimeout: time.Second * 10}
@@ -43,9 +43,9 @@ var (
 	nofilter []string
 	Folder = "download/"
 	prefixChar = "." // Don't use  # and @ because it might mess with channels
-	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'") //Ugly and unneeded 
+	Qreplacer = strings.NewReplacer("&quot;", "\"", "&#039;", "'") //TODO: Legit I can just use the HTML thing that automatically does this. No idea why I haven't done this yet
 	Lreplacer = strings.NewReplacer(" ", "+")
-	version = "0.6.8" //Late
+	version = "0.7.1"
 	isVConnected = false
 	APlaylist = "autoplaylist.txt"
 	triviaStatus = false
@@ -55,8 +55,8 @@ var (
 	articleUrl string
 	articleId int
 	totalItems int
-	twitchUsers = []string{""}
-	commands = []string{ //garbage. TODO: fix
+	twitchUsers twitchUserSlice //This was more difficult to get working than it needed to be
+	commands = []string{
 	prefixChar + "removefilter",
 	prefixChar + "enablefilter",
 	prefixChar + "dogbot",
@@ -92,15 +92,20 @@ var (
 )
 
 func init() {
+	flag.Var(&twitchUsers, "tu", "Twitch users that for which to notify")
+	flag.StringVar(&prefixChar, "pfx", ".", "Prefix that the bot uses for commands")
+	flag.StringVar(&redisAddr, "r", "localhost:6379", "Address of Redis database.") //TODO: Add support for passworded databases. This is a huge security flaw that should be fixed ASAP. That being said, I'll probably not do it for awhile
+	flag.StringVar(&client_id, "cl", "", "Twitch API client ID")
+	flag.StringVar(&announcementChannel, "c", "", "Channel where all the twitch message announcements go")
 	flag.StringVar(&token, "t", "", "Bot Token")
-	flag.BoolVar(&logging, "l", true, "Enables/Disables Printing Messages to CMD")
+	flag.BoolVar(&logging, "l", false, "Enables/Disables Printing Messages to CMD")
 	flag.Parse()
 }
 
 func main()  {
 	go forever()
 
-	url := "http://bots.dogbot.us/DogBotVer" //setup rest and not use html
+	url := "http://bots.dogbot.us/DogBotVer"
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Could not reach version check server.")
@@ -122,16 +127,30 @@ func main()  {
 		return
 	}
 	dg, err := discordgo.New("Bot " + token)
+	if err != nil {
+		fmt.Println("Error creating Discord session: ", err)
+		return
+	}
 
 	u, err := dg.User("@me")
 	if err != nil {
 		fmt.Println("Error obtaining account details,", err)
 	}
 
-	if err != nil {
-		fmt.Println("Error creating Discord session: ", err)
-		return
+
+
+	if announcementChannel == "" { //TODO: More checks will eventually need to be run. If the bot does not have access to the channel given, the bot may hang everytime, or even crash
+		fmt.Println("No Twitch announcement channel set. Twitch functions will not work.\nUse flag \"c\" to set one." )
+		twitchCheckEnable = false
+		firstpasstwitch = false
 	}
+
+	if client_id == "" { //Same thing as above
+		fmt.Println("Client id for Twitch not set. Twitch functions will not work.\nUse flag \"cl\" to set a client id.")
+		twitchCheckEnable = false
+		firstpasstwitch = false
+	}
+
 	dg.AddHandler(messageCreate)
 
 	BotID = u.ID
@@ -153,7 +172,6 @@ func twitchChecker(s *discordgo.Session, tUser string) {
 	var isStreaming bool
 
 	for twitchCheckEnable {
-
 		doLater(func() {
 			twitchSession, err := twitch.NewSession(twitch.NewSessionInput{ClientID: client_id})
 			if err != nil {
@@ -178,6 +196,7 @@ func twitchChecker(s *discordgo.Session, tUser string) {
 			test, err := twitchSession.GetStream(&Stream)
 
 			streamEmbedPrimerTeb := []*discordgo.MessageEmbedField{}
+
 
 			if channelData != nil {
 				streamEmbedPrimer := []*discordgo.MessageEmbedField{
@@ -208,28 +227,30 @@ func twitchChecker(s *discordgo.Session, tUser string) {
 				if err != nil {
 					fmt.Println(err)
 				}
-				if test.Total == 1 && !isStreaming {
+				if test != nil {
+					if test.Total == 1 && !isStreaming {
 
-					isStreaming = true
-					message, err := s.ChannelMessageSendEmbed(announcementChannel, &embed)
-					if err != nil {
-						fmt.Print(err)
-					}
+						isStreaming = true
+						message, err := s.ChannelMessageSendEmbed(announcementChannel, &embed)
+						if err != nil {
+							fmt.Print(err)
+						}
 
-					for isStreaming {
-						doLater(func() {
-							var checkOnlineStatus, err= twitchSession.GetStream(&Stream)
-							if err != nil {
-								fmt.Println(err)
-							}
-							if checkOnlineStatus != nil {
-								if checkOnlineStatus.Total == 0 {
-									isStreaming = false
-									s.ChannelMessageEdit(announcementChannel, message.ID, channelData.DisplayName+"'s stream has ended.")
-									return
+						for isStreaming {
+							doLater(func() {
+								var checkOnlineStatus, err = twitchSession.GetStream(&Stream)
+								if err != nil {
+									fmt.Println(err)
 								}
-							}
-						})
+								if checkOnlineStatus != nil {
+									if checkOnlineStatus.Total == 0 {
+										isStreaming = false
+										s.ChannelMessageEdit(announcementChannel, message.ID, channelData.DisplayName+"'s stream has ended.")
+										return
+									}
+								}
+							})
+						}
 					}
 				}
 			}
@@ -329,7 +350,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//A really janky way to rate limit
-	//TODO: Fix
 	/*
 	if m.Author.ID != "157630049644707840" {
 		tNow := time.Now()
@@ -356,7 +376,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		if err != nil{
 			s.ChannelMessageSend(d.ID, err.Error())
 		}
-		for i := 0; i >= 0 && i < len(commands); i++ { //TODO: Cleanup
+		for i := 0; i >= 0 && i < len(commands); i++ {
 			//This is a pretty bad way to do this but eh
 			if commands[i] == prefixChar+"removefilter"{
 				comment = "Disables chat filter in the channel it is run in"
@@ -575,7 +595,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			e := ""
 			for b := int64(0); b < i; b++ {
-				getJson("http://random.cat/meow", &j) //Update for new API(http:\/\/aws.random.cat\/meow)
+				getJson("http://random.cat/meow", &j)
 				e = e + j.URL + " "
 			}
 			s.ChannelMessageSend(d.ID, e)
@@ -705,8 +725,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				fmt.Println(err)
 			}
 			vid, _ := ytdl.GetVideoInfo(url)
-
-			queue = append(queue, arg[0])
 
 			for j := 0; j < len(queue); j++ {
 				var fileName string
@@ -1832,8 +1850,18 @@ func sendLater(s *discordgo.Session, cid string, msg string) {
 
 func removeFromQueue(){
 	queue = queue[1:]
-
 }
+
+func (s *twitchUserSlice) String() string {
+	return fmt.Sprintf("%d", *s)
+}
+
+func (s *twitchUserSlice) Set(str string) error {
+	fmt.Sprintf("%s\n", str)
+	*s = append(*s, str)
+	return nil
+}
+
 //structs
 type TwitchConvert struct{
 	Status int `json:"Total"`
@@ -1842,6 +1870,8 @@ type TwitchConvert struct{
 	Title string `json:"Status"`
 	Game string `json:"Game"`
 }
+
+type twitchUserSlice []string
 
 type html struct {
 	Body body `xml:"<aside class=\"portable-infobox pi-background pi-theme-wikia pi-layout-stacked\">>"`
@@ -1934,6 +1964,7 @@ func youtubeDl(url string, m *discordgo.Message, s *discordgo.Session) (io.Reade
 
 	vid, err := ytdl.GetVideoInfo(url)
 	if err != nil {
+		removeFromQueue()
 		s.ChannelMessageSend(m.ChannelID, "Error getting video info. Is the video age restricted?")
 		return nil, err
 	}
