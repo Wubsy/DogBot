@@ -1,3 +1,4 @@
+# The servers have gone down so error checking won't work and you can't download a premade until I get $3
 # Important
 Read everything in the readme before asking for help, please
 # DogBot
@@ -89,4 +90,4 @@ As of version 0.5.7, I have started building my go files into executables. Becau
 You can use a .bat file and put something like `BotApp-0.0.1.exe -t` followed by your bot token in it and run it in the same directory as the executable. 
 
 Generic Executable will not be regularly updated.
-[Download Generic Executable or Premade DogBot](http://willbusby.us/downloads/)
+[Download Generic Executable or Premade DogBot]()
