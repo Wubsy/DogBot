@@ -1,4 +1,3 @@
-# The servers have gone down so version checking won't work and you can't download a premade until I get $3
 # Important
 Read everything in the readme before asking for help, please
 # DogBot
