@@ -108,7 +108,7 @@ func init() {
 func main()  {
 	go forever()
 
-	url := "http://bots.dogbot.us/DogBotVer"
+	url := "https://wubsy.github.io/DogBot"
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("Could not reach version check server.")
