@@ -1784,7 +1784,7 @@ func canManageMessage(session *discordgo.Session, user *discordgo.User, channel 
 
 func clearChannelChat(i int, channel *discordgo.Channel, session *discordgo.Session) {
 	fmt.Println("Clearing channel messages...")
-	messages, err := session.ChannelMessages(channel.ID, i, "", "")
+	messages, err := session.ChannelMessages(channel.ID, i, "", "", "")
 	if err != nil {
 		session.ChannelMessageSend(channel.ID, "Could not get messages.")
 		session.ChannelMessageSend(channel.ID, "```" + err.Error() + "```")
@@ -1805,7 +1805,7 @@ func clearChannelChat(i int, channel *discordgo.Channel, session *discordgo.Sess
 }
 
 func clearUserChat(i int, channel *discordgo.Channel, session *discordgo.Session, id string) {
-	messages, err := session.ChannelMessages(channel.ID, i, "", "")
+	messages, err := session.ChannelMessages(channel.ID, i, "", "", "")
 	if err != nil {
 		session.ChannelMessageSend(channel.ID, "Could not get messages.")
 		session.ChannelMessageSend(channel.ID, "```" + err.Error() + "```")
