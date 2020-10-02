@@ -411,9 +411,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if commands[i] == "lmgtfy" {
 				comment = "Generates a Let Me Google That For You link and shortens it"
 			}
-			if commands[i] == "gay" {
-				comment = "Determines how gay a user is"
-			}
 			if commands[i] == "clean" {
 				comment = "Removes messages by argument number"
 			}
@@ -918,7 +915,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				Color: 10181046,
 				Fields: []*discordgo.MessageEmbedField{
 					{Name: member.User.Username + " asked:", Value: arg[0]},
-					{Name: "Response:", Value: "Use " + prefixChar + "gay instead"},
+					{Name: "Response:", Value: "Bad question"},
 				},
 			}
 			_, err := s.ChannelMessageSendEmbed(d.ID, &embed)
@@ -1001,41 +998,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 		removeNow(s, m.Message)
-	} else if strings.HasPrefix(c, prefixChar+"gay") && !isRateLimited(s, d, m) {
-		cc := strings.TrimPrefix(c, prefixChar+"gay ")
-		arg := strings.Split(cc, " ")
-		i := rand.Intn(100)
-		j := strconv.Itoa(i)
-		output := ""
-		if arg[0] == " " {
-			if len(arg) >= 1 {
-				output = arg[1]
-			}
-		} else {
-			output = arg[0]
-		}
-		if len(arg) >= 1 {
-			output = arg[len(arg)-1]
-			//fmt.Println(len(arg), arg[len(arg)-1])
-		}
-		if !strings.Contains(cc, "<@") {
-			s.ChannelMessageSend(d.ID, "Not sure who test for the gay gene.")
-		} else {
-			bot_id := strings.TrimPrefix(strings.TrimSuffix(BotID, ">"), "<@")
-			if strings.Contains(output, "157630049644707840") {
-				s.ChannelMessageSend(m.ChannelID, output+" is 0% gay!")
-			} else {
-				if strings.Contains(output, bot_id) {
-					s.ChannelMessageSend(m.ChannelID, "<@"+BotID+"> is 0% gay!")
-				} else {
-					if strings.Contains(output, "155481695167053824") {
-						s.ChannelMessageSend(m.ChannelID, "<@!155481695167053824> is at least 300% gay!")
-					} else {
-						s.ChannelMessageSend(m.ChannelID, ""+output+"is "+j+"% gay!")
-					}
-				}
-			}
-		}
 	} else if strings.HasPrefix(c, prefixChar+"createaccount") && !isRateLimited(s, d, m) {
 		err := createAccount(m.Author.ID, 200, d, s)
 		if err != nil {
