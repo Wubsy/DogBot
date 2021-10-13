@@ -52,11 +52,10 @@ If you have an IDE, you can build it into an executable and only have to do `shi
  This version is different because I'm constantly changing how things work. At the time of editing this file, these are the commands.
  - cat < Non-zero positive num up to 15 >
  - doge < Non-zero positive num up to 15 >
- - gay < @user-id > (Still in development)
  - trivia (Only does one question | Answer to question will be a letter ~~TODO: Admin only~~)
  - mute < @user-id > (Mutes only per text channel) (Admin Only)
  - allmute < @user-id > (Mutes in all text channels) (Admin Only) 
- - enablefilter (Enables chat filter | By default only does 'traps arent gay' and the like. TODO: Admin set filters)
+ - enablefilter (Enables chat filter | TODO: Admin set filters)
  - removefilter (Disables chat filter)
  - clear < Non-zero positive num > (TODO: Disallow negative num)
  - info (Shows bot info. Currently working on displaying both links)
