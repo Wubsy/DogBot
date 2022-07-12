@@ -49,7 +49,6 @@ This version is different because I'm constantly changing how things work. At th
 - .cat < Non-zero positive num up to 15 >
 - .doge < Non-zero positive num up to 15 >
 - .snek < Non-zero positive num up to 15 >
-- .gay < @user-id > (Still in development)
 - .trivia (Only does one question | Answer to question will be a letter TODO: Admin only)
 - .mute < @user-id > (Mutes only per text channel) (Admin Only)
 - .muteall < @user-id > (Mutes in all text channels) (Admin Only) 
